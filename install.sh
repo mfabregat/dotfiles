@@ -47,7 +47,8 @@ sudo ubuntu-drivers install
 # Install Ghostty
 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/mkasberg/ghostty-ubuntu/HEAD/install.sh)"
 # Make it the default terminal
-nano ~/.config/ubuntu-xdg-terminals.list # com.mitchellh.ghostty.desktop
+echo 'com.mitchellh.ghostty.desktop' >> ~/.config/ubuntu-xdg-terminals.list
+
 
 
 
