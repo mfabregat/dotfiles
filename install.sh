@@ -16,7 +16,6 @@ Pin: release o=LP-PPA-mozillateam
 Pin-Priority: 1001
 ' | sudo tee /etc/apt/preferences.d/mozilla-firefox
 sudo apt install firefox
-# Not showing in Desktop apps?
 # Install Brave
 sudo apt install curl
 curl -fsS https://dl.brave.com/install.sh | sh
@@ -45,6 +44,12 @@ nvidia-smi
 # If not
 sudo ubuntu-drivers install
 
+# Install Ghostty
+/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/mkasberg/ghostty-ubuntu/HEAD/install.sh)"
+# Make it the default terminal
+nano ~/.config/ubuntu-xdg-terminals.list # com.mitchellh.ghostty.desktop
+
+
 
 ### Entertainment
 # Spotify
@@ -52,3 +57,21 @@ curl -sS https://download.spotify.com/debian/pubkey_5384CE82BA52C83A.asc | sudo 
 echo "deb https://repository.spotify.com stable non-free" | sudo tee /etc/apt/sources.list.d/spotify.list
 sudo apt-get update && sudo apt-get install spotify-client
 
+# Steam
+# Download from https://store.steampowered.com/about/download
+sudo apt install ~/Downloads/steam*.deb
+
+# Discord (testing Vesktop)
+sudo apt install flatpak
+flatpak remote-add --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo
+# or manually download the .deb from https://vesktop.dev/install/linux/
+sudo apt install ~/Downloads/vesktop*.deb
+
+# Faugus
+sudo dpkg --add-architecture i386
+sudo add-apt-repository -y ppa:faugus/faugus-launcher
+sudo apt update
+sudo apt install -y faugus-launcher
+
+# Stremio
+flatpak install flathub com.stremio.Stremio
