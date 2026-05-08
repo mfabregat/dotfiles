@@ -57,6 +57,12 @@ echo 'com.mitchellh.ghostty.desktop' >> ~/.config/ubuntu-xdg-terminals.list
 curl -sS https://download.spotify.com/debian/pubkey_5384CE82BA52C83A.asc | sudo gpg --dearmor --yes -o /etc/apt/trusted.gpg.d/spotify.gpg
 echo "deb https://repository.spotify.com stable non-free" | sudo tee /etc/apt/sources.list.d/spotify.list
 sudo apt-get update && sudo apt-get install spotify-client
+# Spicetify
+curl -fsSL https://raw.githubusercontent.com/spicetify/cli/main/install.sh | sh
+sudo chmod a+wr /usr/share/spotify && sudo chmod a+wr /usr/share/spotify/Apps -R
+bash && spicetify backup apply
+curl -fsSL https://raw.githubusercontent.com/spicetify/marketplace/main/resources/install.sh | sh
+
 
 # Steam
 # Download from https://store.steampowered.com/about/download
