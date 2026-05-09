@@ -49,7 +49,10 @@ sudo ubuntu-drivers install
 # Make it the default terminal
 echo 'com.mitchellh.ghostty.desktop' >> ~/.config/ubuntu-xdg-terminals.list
 
-
+# Install Joplin
+wget -O - https://raw.githubusercontent.com/laurent22/joplin/dev/Joplin_install_and_update.sh | bash
+# Key ID: euGDAmN1GJduRjfvfHxnCFB4Azd3sx98
+# Secret Key: yyDN4p73mKMZcTIHQ7qUbH3uNCMvpOtv
 
 
 ### Entertainment
