@@ -63,8 +63,11 @@ sudo apt-get update && sudo apt-get install spotify-client
 # Spicetify
 curl -fsSL https://raw.githubusercontent.com/spicetify/cli/main/install.sh | sh
 sudo chmod a+wr /usr/share/spotify && sudo chmod a+wr /usr/share/spotify/Apps -R
-bash && spicetify backup apply
-curl -fsSL https://raw.githubusercontent.com/spicetify/marketplace/main/resources/install.sh | sh
+# bash && spicetify backup apply
+# curl -fsSL https://raw.githubusercontent.com/spicetify/marketplace/main/resources/install.sh | sh
+spicetify config current_theme text
+spicetify config color_scheme Gruvbox
+spicetify apply
 
 
 # Steam
@@ -85,3 +88,19 @@ sudo apt install -y faugus-launcher
 
 # Stremio
 flatpak install flathub com.stremio.Stremio
+
+
+## Themes
+# https://github.com/Fausto-Korpsvart/Gruvbox-GTK-Theme/tree/master
+sudo apt install gnome-tweaks
+sudo apt install gtk2-engines-murrine
+# Move downloaded folder (the one with gtk-4.0) to ~/.themes
+cd ~/dotfiles
+stow gruvbox_gtk
+# Then open gnome-tweaks and select the theme
+# Finally copy only assets, gtk.css and gtk-dark.css to ~/.config/gtk-4.0
+sudo flatpak override --filesystem=$HOME/.themes
+sudo flatpak override --filesystem=$HOME/.icons
+flatpak override --user --filesystem=xdg-config/gtk-4.0
+sudo flatpak override --filesystem=xdg-config/gtk-4.0
+ln -s ~/.themes/Gruvbox-BL-MB-Dark ~/.local/share/themes/Gruvbox-BL-MB-Dark # is this necessary?

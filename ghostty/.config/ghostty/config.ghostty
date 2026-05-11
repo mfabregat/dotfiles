@@ -1,0 +1,17 @@
+theme = Gruvbox Dark Hard
+
+
+# Dynamic split based on available space
+keybind = alt+enter=new_split:auto
+
+# Navigation between splits
+keybind = alt+up=goto_split:up
+keybind = alt+down=goto_split:down
+keybind = alt+left=goto_split:left
+keybind = alt+right=goto_split:right
+
+# Resize splits (You MUST provide a number for the resize amount)
+keybind = alt+shift+up=resize_split:up,10
+keybind = alt+shift+down=resize_split:down,10
+keybind = alt+shift+left=resize_split:left,10
+keybind = alt+shift+right=resize_split:right,10
