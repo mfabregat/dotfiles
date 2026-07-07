@@ -188,5 +188,6 @@
     "continue.enableTabAutocomplete": false,
     "github.copilot.nextEditSuggestions.enabled": true,
     "scm.defaultViewMode": "tree",
-    "scm.alwaysShowRepositories": true
+    "scm.alwaysShowRepositories": true,
+    "terminal.explorerKind": "both"
 }

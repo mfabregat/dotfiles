@@ -33,3 +33,19 @@ mv ~/.config/package ~/dotfiles/package/.config/
 cd ~/dotfiles
 stow package
 ```
+
+## GNOME and Ubuntu settings
+
+Because GNOME settings are stored in a binary database (`dconf`) under `~/.config/dconf/user`, they cannot be symlinked directly via Stow. A helper script manages syncing these settings as a plain text `.ini` file.
+
+To save your current GNOME settings to the repository, run:
+
+```bash
+./gnome.sh save
+```
+
+To restore the settings from the repository, run:
+
+```bash
+./gnome.sh load
+```

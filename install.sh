@@ -3,8 +3,6 @@ sudo apt update && sudo apt upgrade
 # Remove unattended-upgrades
 sudo apt remove unattended-upgrades
 
-# Remove Ubuntu dockqq
-gnome-extensions disable ubuntu-dock@ubuntu.com
 
 ### Browsers
 # Remove snap firefox and install apt version
@@ -28,7 +26,11 @@ git config --global user.email "marcfj98@gmail.com"
 ssh-keygen -t ed25519 -C "marcfj98@gmail.com"
 cat ~/.ssh/id_ed25519.pub
 # Add it to GitHub
-git clone git@github.com:mfabregat/dotfiles.git
+git clone git@github.com:mfabregat/dotfiles.git ~/dotfiles
+cd ~/dotfiles
+
+# Apply Ubuntu and GNOME configs
+
 
 # Download apt version of code https://code.visualstudio.com/docs/setup/linux
 sudo apt install ~/Downloads/code*.deb
@@ -46,8 +48,7 @@ sudo ubuntu-drivers install
 
 # Install Ghostty
 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/mkasberg/ghostty-ubuntu/HEAD/install.sh)"
-# Make it the default terminal
-echo 'com.mitchellh.ghostty.desktop' >> ~/.config/ubuntu-xdg-terminals.list
+stow ghostty
 
 # Install Joplin
 wget -O - https://raw.githubusercontent.com/laurent22/joplin/dev/Joplin_install_and_update.sh | bash
