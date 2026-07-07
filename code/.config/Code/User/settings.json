@@ -3,8 +3,6 @@
     // "terminal.integrated.fontFamily": "'Cascadia Mono', monospace",
     "files.autoSave": "afterDelay",
     "git.autofetch": "all",
-    "containers.containerClient": "com.microsoft.visualstudio.containers.docker",
-    "containers.orchestratorClient": "com.microsoft.visualstudio.orchestrators.dockercompose",
     "git.enableSmartCommit": true,
     "workbench.editorAssociations": {
         "*.ipynb": "jupyter-notebook",
@@ -12,35 +10,16 @@
         "*.shp": "default"
     },
     "files.watcherExclude": {
+        ".catkin_tools": true,
         "**/.git/objects/**": true,
         "**/.git/subtree-cache/**": true,
-        ".catkin_tools": true,
-        // "**/node_modules/*/**": true,
-        // "**/.hg/store/**": true,
-        // "**/.adobe/**": true,
-        // "**/.ansible/**": true,
-        // "**/.cache/**": true,
-        // "**/.config/**": true,
-        // "**/.docker/**": true,
-        // "**/.firefox/**": true,
-        // "**/.gnupg/**": true,
-        // "**/.hplip/**": true,
-        // "**/.local/**": true,
-        // "**/.mozilla/**": true,
-        // "**/.nv/**": true,
-        // // "**/.oh-my-zsh/**": true,
-        // "**/.pki/**": true,
-        // "**/.ros/**": true,
-        // "**/.vagrant.d/**": true,
-        // "**/.venv/bin/**": true,
-        // "**/.venv/include/**": true,
-        // "**/.venv/lib/**": true,
-        // "**/.venv/lib64/**": true,
-        // "**/.venv/share/**": true,
         "**/.vscode/**": true,
-        // "**/.Xauthority/**": true
+        "build/": true,
+        "install/": true,
+        "log/": true
     },
     "files.exclude": {
+        "": true,
         "**/.DS_Store": false,
         "**/.git": false,
         "**/.hg": false,
@@ -207,5 +186,7 @@
     "git.fetchOnPull": true,
     "chat.viewSessions.orientation": "stacked",
     "continue.enableTabAutocomplete": false,
-    "github.copilot.nextEditSuggestions.enabled": true
+    "github.copilot.nextEditSuggestions.enabled": true,
+    "scm.defaultViewMode": "tree",
+    "scm.alwaysShowRepositories": true
 }

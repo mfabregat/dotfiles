@@ -19,16 +19,17 @@ To install the dotfiles, clone this repository and use `stow` to create symlinks
 cd ~
 git clone https://github.com/mfabregat/dotfiles
 cd ~/dotfiles
-stow <package_name>
+stow package
 ```
 
 ## Adding a new config
 
-To add a new configuration file, simply create the file in the corresponding package directory and then run `stow` to create the symlink. For example, for `kitty`:
+To add a new configuration file, simply create the file in the corresponding package directory and then run `stow` to create the symlink. For example, for `package`:
 
 ```bash
-mkdir -p ~/dotfiles/kitty/.config
-mv ~/.config/kitty ~/dotfiles/kitty/.config/
+mkdir -p ~/dotfiles/package/.config
+mv ~/.config/package ~/dotfiles/package/.config/
+# You may need to move more files depending on the package configuration structure
 cd ~/dotfiles
-stow kitty
+stow package
 ```
