@@ -15,3 +15,5 @@ keybind = alt+shift+up=resize_split:up,10
 keybind = alt+shift+down=resize_split:down,10
 keybind = alt+shift+left=resize_split:left,10
 keybind = alt+shift+right=resize_split:right,10
+
+keybind = alt+q=close_surface

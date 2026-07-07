@@ -20,3 +20,5 @@ ssh-keygen -t ed25519 -C "marc.fabregat@tecnalia.com"
 git config credential.helper store
 git clone git@git.code.tecnalia.dev:tecnalia_robotics/rob4green/cranebot_workcell.git
 # And paste the identity token
+
+## WARNING: NVIDIA drivers needed are *-open

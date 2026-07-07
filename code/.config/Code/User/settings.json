@@ -6,23 +6,10 @@
     "containers.containerClient": "com.microsoft.visualstudio.containers.docker",
     "containers.orchestratorClient": "com.microsoft.visualstudio.orchestrators.dockercompose",
     "git.enableSmartCommit": true,
-    "docker.containers.groupBy": "Compose Project Name",
     "workbench.editorAssociations": {
         "*.ipynb": "jupyter-notebook",
         "*.bag": "default",
         "*.shp": "default"
-    },
-    "material-icon-theme.files.associations": {
-        "**.rosinstall": "git",
-        "**.repos": "git",
-        ".cmake-format": "cmake"
-    },
-    "jupyter.widgetScriptSources": [
-        "jsdelivr.com",
-        "unpkg.com"
-    ],
-    "material-icon-theme.folders.associations": {
-        // "cmake": "cmake"
     },
     "files.watcherExclude": {
         "**/.git/objects/**": true,
@@ -61,25 +48,17 @@
         "**/*.pyc": true,
         "**/Thumbs.db": false
     },
-    "docker.containers.label": "ContainerName",
-    "docker.containers.description": [
-        "ImageId",
-        "Status"
-    ],
-    "git-graph.maxDepthOfRepoSearch": 2,
-    "git-graph.repository.commits.fetchAvatars": true,
     "window.restoreFullscreen": true,
-    "pyqt-integration.qtdesigner.path": "/usr/lib/qt5/bin/designer",
     "git.postCommitCommand": "push",
     "git.confirmSync": false,
     "editor.suggestSelection": "first",
-    "vsintellicode.modify.editor.suggestSelection": "automaticallyOverrodeDefaultValue",
     "files.trimFinalNewlines": true,
     "workbench.list.smoothScrolling": true,
     "editor.guides.bracketPairs": true,
     "cmake.configureOnOpen": true,
     "[cpp]": {
-        "editor.defaultFormatter": "llvm-vs-code-extensions.vscode-clangd"
+        "editor.defaultFormatter": "llvm-vs-code-extensions.vscode-clangd",
+        "editor.formatOnSave": true
     },
     "editor.formatOnSave": true,
     "editor.formatOnPaste": true,
@@ -87,23 +66,22 @@
     "editor.inlineSuggest.enabled": true,
     "github.copilot.enable": {
         "*": true,
-        "yaml": true,
         "plaintext": true,
-        "markdown": true
+        "markdown": true,
+        "scminput": false,
+        "yaml": true
     },
     "editor.unicodeHighlight.invisibleCharacters": false,
     "editor.unicodeHighlight.ambiguousCharacters": false,
     "[dockerfile]": {
         "editor.defaultFormatter": "ms-azuretools.vscode-docker"
     },
-    "copyrightInserter.holder": "TECNALIA",
     "symlink-follow.autoFollow": true,
     "git.pruneOnFetch": true,
     "git.autoStash": true,
     "git.closeDiffOnOperation": true,
     "git.inputValidationSubjectLength": null,
     "git.terminalGitEditor": true,
-    "terminal.integrated.defaultProfile.linux": "zsh",
     "scm.showActionButton": false,
     "git.allowNoVerifyCommit": true,
     "git.confirmNoVerifyCommit": false,
@@ -120,28 +98,8 @@
         "editor.defaultFormatter": "DavidAnson.vscode-markdownlint",
         "diffEditor.ignoreTrimWhitespace": true
     },
-    "formatFiles.excludedFolders": [
-        "node_modules",
-        ".vscode",
-        ".git",
-        "dist",
-        ".chrome",
-        "**/.git"
-    ],
-    "formatFiles.excludePattern": "**/.git/**",
     "editor.fontLigatures": true,
-    "customizeUI.font.monospace": "'Cascadia Mono'",
-    "customizeUI.font.regular": "'Cascadia Code'",
-    "customizeUI.titleBar": "inline",
-    "material-icon-theme.folders.theme": "specific",
-    "material-icon-theme.folders.color": "#90a4ae",
-    "material-icon-theme.opacity": 1,
-    "material-icon-theme.saturation": 1,
-    "material-icon-theme.activeIconPack": "angular",
-    "material-icon-theme.hidesExplorerArrows": false,
     "git.mergeEditor": true,
-    "haskell.manageHLS": "GHCup",
-    "xml.format.maxLineWidth": 0,
     "editor.cursorSurroundingLines": 5,
     "[python]": {
         "editor.formatOnType": true,
@@ -151,16 +109,8 @@
         }
     },
     "git.useCommitInputAsStashMessage": true,
-    "gitblame.commitUrl": "${tool.protocol}//${gitorigin.hostname}${gitorigin.port}${gitorigin.path}/blob/${hash}/${file.path}/#L${file.line}",
-    "3dviewer.boundingBox": true,
-    "3dviewer.limitFps": 30,
-    "3dviewer.hotReload": false,
-    "3dpreview.showMesh": false,
     "editor.renderWhitespace": "none",
     "workbench.editor.preferHistoryBasedLanguageDetection": true,
-    "[latex]": {
-        "editor.defaultFormatter": "James-Yu.latex-workshop"
-    },
     "autopep8.args": [
         "--max-line-length",
         "120",
@@ -173,6 +123,10 @@
         "--experimental",
         "-aa"
     ],
+    "flake8.args": [
+        "--max-line-length=120",
+        "--disable=D107"
+    ],
     "markdownlint.config": {
         "MD013": false,
         "MD014": false,
@@ -182,27 +136,9 @@
         "source.fixAll": "explicit",
         "source.organizeImports": "explicit"
     },
-    "markdown-preview-github-styles.darkTheme": "dark_dimmed",
-    "latex-workshop.latex.autoBuild.interval": 10000,
-    "latex-workshop.latex.autoBuild.run": "never",
-    "python.formatting.provider": "none",
-    "flake8.args": [
-        "--max-line-length=120",
-        "--disable=D107"
-    ],
     "editor.wordWrap": "on",
-    "latex-workshop.docker.image.latex": "arkark/latexmk:full",
     "files.simpleDialog.enable": true,
-    "C_Cpp.intelliSenseEngineFallback": "enabled",
-    "asciidoc.preview.lineHeight": 1.1,
     "workbench.tree.renderIndentGuides": "always",
-    "[xml]": {
-        "editor.indentSize": 1,
-        "editor.autoClosingBrackets": "never",
-        "files.trimFinalNewlines": true,
-        "editor.defaultFormatter": "DotJoshJohnson.xml"
-    },
-    "python.diagnostics.sourceMapsEnabled": true,
     "python.analysis.inlayHints.functionReturnTypes": true,
     "python.analysis.inlayHints.pytestParameters": true,
     "explorer.excludeGitIgnore": false,
@@ -216,61 +152,22 @@
     ],
     "terminal.integrated.enableMultiLinePasteWarning": "never",
     "explorer.confirmDragAndDrop": false,
-    "betterComment.forcedLineComment": [
-        "**/*.xml",
-        "**/*.xacro",
-        "**/*.macro",
-        "**/*.html",
-        "**/*.css",
-        "**/*.md"
-    ],
-    "xml.format.spaceBeforeEmptyCloseTag": false,
-    "jupyter.askForKernelRestart": false,
-    "isort.check": true,
     "remote.autoForwardPortsSource": "hybrid",
     "remote.autoForwardPorts": false,
-    "multiDiffEditor.experimental.enabled": true,
     "remote.forwardOnOpen": false,
     "remote.restoreForwardedPorts": false,
     "dev.containers.forwardWSLServices": false,
-    "cmake.showOptionsMovedNotification": false,
-    "yaml.customTags": [
-        "!Sequence mapping",
-        "!Service mapping",
-        "!Action mapping",
-        "!Skill mapping",
-        "!Link scalar",
-        "!Link sequence",
-        "!Link mapping",
-    ],
-    "github.copilot.editor.enableAutoCompletions": true,
-    "markdown.extension.orderedList.marker": "one",
     "terminal.integrated.commandsToSkipShell": [
         "-workbench.action.showCommands"
     ],
-    "MATLAB.telemetry": false,
     "cmake.pinnedCommands": [
         "workbench.action.tasks.configureTaskRunner",
         "workbench.action.tasks.runTask"
     ],
     "cmake.showConfigureWithDebuggerNotification": false,
-    "scm.showHistoryGraph": false,
     "terminal.integrated.enableImages": true,
-    "chat.editing.alwaysSaveWithGeneratedChanges": true,
-    // "github.copilot.nextEditSuggestions.enabled": true,
-    "github.copilot.chat.editor.temporalContext.enabled": true,
-    "github.copilot.chat.edits.temporalContext.enabled": true,
     "python.terminal.shellIntegration.enabled": true,
     "diffEditor.ignoreTrimWhitespace": false,
-    "containers.containers.groupBy": "Compose Project Name",
-    "github.copilot.chat.agent.thinkingTool": true,
-    "[dockercompose]": {
-        "editor.tabSize": 2,
-        "editor.defaultFormatter": "redhat.vscode-yaml"
-    },
-    "[github-actions-workflow]": {
-        "editor.defaultFormatter": "redhat.vscode-yaml"
-    },
     "C_Cpp.workspaceParsingPriority": "low",
     "chat.editing.confirmEditRequestRemoval": false,
     "git.replaceTagsWhenPull": true,
@@ -280,22 +177,35 @@
     "[tsv]": {
         "editor.inlayHints.maximumLength": 0
     },
-    "urdf-visualizer.packages": {
-        "kuka_iontec_support": "/home/110359@TRI.LAN/ros/jazzy/eitri_ws/src/kuka_robot_descriptions/kuka_iontec_support",
-        "flexbotics_robots_kuka": "/home/110359@TRI.LAN/ros/jazzy/eitri_ws/src/flexbotics_robots_kuka/flexbotics_robots_kuka",
-    },
     "cmake.enableAutomaticKitScan": false,
     "terminal.integrated.initialHint": false,
     "editor.minimap.enabled": false,
-    "containers.containers.description": [
-        "ImageId",
-        "Status"
-    ],
-    "containers.containers.label": "ContainerName",
-    "chat.planAgent.defaultModel": "Raptor mini (Preview) (copilot)",
     "workbench.colorTheme": "Gruvbox Dark Hard",
-    "chat.viewSessions.orientation": "stacked",
     "scm.repositories.visible": 0,
     "git.repositoryScanMaxDepth": 3,
-    "explorer.confirmPasteNative": false
+    "explorer.confirmPasteNative": false,
+    "explorer.confirmDelete": false,
+    "remote.defaultExtensionsIfInstalledLocally": [
+        "GitHub.copilot",
+        "GitHub.copilot-chat",
+        "GitHub.vscode-pull-request-github",
+        "ms-python.python",
+        "ms-vscode.cpptools",
+        "charliermarsh.ruff",
+        "DavidAnson.vscode-markdownlint"
+    ],
+    "workbench.activityBar.location": "top",
+    "C_Cpp.intelliSenseEngine": "disabled",
+    "ruff.configuration": "--line-length=100\n--select=E,F,I,ERA,C90,PLR0915\n",
+    "terminal.integrated.fontFamily": "Roboto Mono",
+    "terminal.integrated.fontLigatures.enabled": true,
+    "git.openRepositoryInParentFolders": "never",
+    "git.autofetchPeriod": 300,
+    "clangd.path": "~/.config/Code/User/globalStorage/llvm-vs-code-extensions.vscode-clangd/install/22.1.0/clangd_22.1.0/bin/clangd",
+    "ROS2.autoShowOutputChannel": false,
+    "workbench.startupEditor": "none",
+    "git.fetchOnPull": true,
+    "chat.viewSessions.orientation": "stacked",
+    "continue.enableTabAutocomplete": false,
+    "github.copilot.nextEditSuggestions.enabled": true
 }

@@ -65,9 +65,9 @@ curl -fsSL https://raw.githubusercontent.com/spicetify/cli/main/install.sh | sh
 sudo chmod a+wr /usr/share/spotify && sudo chmod a+wr /usr/share/spotify/Apps -R
 # bash && spicetify backup apply
 # curl -fsSL https://raw.githubusercontent.com/spicetify/marketplace/main/resources/install.sh | sh
-spicetify config current_theme text
-spicetify config color_scheme Gruvbox
-spicetify apply
+cd ~/dotfiles
+stow spicetify
+spicetify config current_theme text && spicetify config color_scheme Gruvbox && spicetify backup apply
 
 
 # Steam
