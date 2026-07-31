@@ -159,7 +159,7 @@
     "cmake.enableAutomaticKitScan": false,
     "terminal.integrated.initialHint": false,
     "editor.minimap.enabled": false,
-    "workbench.colorTheme": "Gruvbox Dark Hard",
+    "workbench.colorTheme": "Gruvbox Dark Medium",
     "scm.repositories.visible": 0,
     "git.repositoryScanMaxDepth": 3,
     "explorer.confirmPasteNative": false,

@@ -30,7 +30,7 @@ git clone git@github.com:mfabregat/dotfiles.git ~/dotfiles
 cd ~/dotfiles
 
 # Apply Ubuntu and GNOME configs
-
+./gnome.sh load
 
 # Download apt version of code https://code.visualstudio.com/docs/setup/linux
 sudo apt install ~/Downloads/code*.deb
@@ -50,10 +50,6 @@ sudo ubuntu-drivers install
 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/mkasberg/ghostty-ubuntu/HEAD/install.sh)"
 stow ghostty
 
-# Install Joplin
-wget -O - https://raw.githubusercontent.com/laurent22/joplin/dev/Joplin_install_and_update.sh | bash
-# Key ID: euGDAmN1GJduRjfvfHxnCFB4Azd3sx98
-# Secret Key: yyDN4p73mKMZcTIHQ7qUbH3uNCMvpOtv
 
 
 ### Entertainment
