@@ -2,8 +2,8 @@
 sessions/
 
 # credentials & generated caches — never commit
-# auth.json
-# models-store.json
+auth.json
+models-store.json
 
 # local-only binaries (rg/fd live only here on this machine)
 bin/
