@@ -214,7 +214,5 @@
     "github.copilot.nextEditSuggestions.enabled": true,
     "scm.defaultViewMode": "tree",
     "scm.alwaysShowRepositories": true,
-    "terminal.explorerKind": "both",
-    "chat.agent.sandbox.enabled": "off",
-    "chat.viewSessions.orientation": "stacked"
+    "terminal.explorerKind": "both"
 }

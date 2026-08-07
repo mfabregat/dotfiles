@@ -1,0 +1,18 @@
+{
+  "enabled": true,
+  "geminiModel": "gemini-3.6-flash",
+  "autoHandoff": true,
+  "handoffModels": [],
+  "cacheMax": 50,
+  "maxDescriptionLines": 0,
+  "batchSize": 8,
+  "searchDefaultNumResults": 5,
+  "videoMethod": "auto",
+  "maxUploadBytes": 536870912,
+  "maxPdfBytes": 15728640,
+  "githubClone": {
+    "enabled": true,
+    "maxRepoSizeMB": 350,
+    "forceClone": false
+  }
+}
