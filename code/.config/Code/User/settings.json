@@ -20,12 +20,17 @@
     },
     "files.exclude": {
         "": true,
+        "**/__pycache__/": true,
         "**/.DS_Store": false,
         "**/.git": false,
+        "**/.git/": true,
         "**/.hg": false,
         "**/.svn": false,
         "**/*.pyc": true,
-        "**/Thumbs.db": false
+        "**/Thumbs.db": false,
+        "build/": true,
+        "install/": true,
+        "log/": true
     },
     "window.restoreFullscreen": true,
     "git.postCommitCommand": "push",
@@ -159,7 +164,7 @@
     "cmake.enableAutomaticKitScan": false,
     "terminal.integrated.initialHint": false,
     "editor.minimap.enabled": false,
-    "workbench.colorTheme": "Gruvbox Dark Hard",
+    "workbench.colorTheme": "Gruvbox Dark Medium",
     "scm.repositories.visible": 0,
     "git.repositoryScanMaxDepth": 3,
     "explorer.confirmPasteNative": false,
@@ -175,7 +180,28 @@
     ],
     "workbench.activityBar.location": "top",
     "C_Cpp.intelliSenseEngine": "disabled",
-    "ruff.configuration": "--line-length=100\n--select=E,F,I,ERA,C90,PLR0915\n",
+    "ruff.lineLength": 120,
+    "ruff.configuration": {
+        "lint": {
+            "select": [
+                "E",
+                "W",
+                "F",
+                "I",
+                "A",
+                "ERA",
+                "RET",
+                "PLR"
+            ],
+            "pylint": {
+                "max-statements": 100
+            },
+            "isort": {
+                "combine-as-imports": true,
+                "split-on-trailing-comma": false
+            }
+        }
+    },
     "terminal.integrated.fontFamily": "Roboto Mono",
     "terminal.integrated.fontLigatures.enabled": true,
     "git.openRepositoryInParentFolders": "never",
@@ -184,9 +210,11 @@
     "ROS2.autoShowOutputChannel": false,
     "workbench.startupEditor": "none",
     "git.fetchOnPull": true,
-    "chat.viewSessions.orientation": "stacked",
     "continue.enableTabAutocomplete": false,
     "github.copilot.nextEditSuggestions.enabled": true,
     "scm.defaultViewMode": "tree",
-    "scm.alwaysShowRepositories": true
+    "scm.alwaysShowRepositories": true,
+    "terminal.explorerKind": "both",
+    "chat.agent.sandbox.enabled": "off",
+    "chat.viewSessions.orientation": "stacked"
 }
