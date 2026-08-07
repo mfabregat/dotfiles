@@ -2,6 +2,8 @@ theme = Gruvbox Dark
 
 # Dynamic split based on available space
 keybind = alt+enter=new_split:auto
+# Horizontal split (new pane at the bottom)
+keybind = alt+shift+enter=new_split:down
 
 # Navigation between splits
 keybind = alt+up=goto_split:up

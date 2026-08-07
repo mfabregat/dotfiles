@@ -1,0 +1,12 @@
+# pi runtime data (live session history for /resume, /continue)
+sessions/
+
+# credentials & generated caches — never commit
+# auth.json
+# models-store.json
+
+# local-only binaries (rg/fd live only here on this machine)
+bin/
+
+# pi npm package installs (reproducible via `pi install npm:...`)
+npm/

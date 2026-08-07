@@ -1,0 +1,10 @@
+{
+	"name": "pi-extension-devcontainer-bash",
+	"private": true,
+	"version": "0.1.0",
+	"type": "module",
+	"description": "Route pi's bash tool into a running devcontainer via docker exec",
+	"pi": {
+		"extensions": ["./index.ts"]
+	}
+}
