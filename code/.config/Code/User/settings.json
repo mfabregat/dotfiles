@@ -23,14 +23,13 @@
         "**/__pycache__/": true,
         "**/.DS_Store": false,
         "**/.git": false,
-        "**/.git/": true,
+        "**/.git/*": true,
         "**/.hg": false,
         "**/.svn": false,
-        "**/*.pyc": true,
         "**/Thumbs.db": false,
-        "build/": true,
-        "install/": true,
-        "log/": true
+        "build/*": true,
+        "install/*": true,
+        "log/*": true
     },
     "window.restoreFullscreen": true,
     "git.postCommitCommand": "push",
@@ -141,6 +140,7 @@
     "remote.forwardOnOpen": false,
     "remote.restoreForwardedPorts": false,
     "dev.containers.forwardWSLServices": false,
+    "dev.containers.mountWaylandSocket": false,
     "terminal.integrated.commandsToSkipShell": [
         "-workbench.action.showCommands"
     ],
@@ -164,7 +164,7 @@
     "cmake.enableAutomaticKitScan": false,
     "terminal.integrated.initialHint": false,
     "editor.minimap.enabled": false,
-    "workbench.colorTheme": "Gruvbox Dark Medium",
+    "workbench.colorTheme": "Gruvbox Dark Soft",
     "scm.repositories.visible": 0,
     "git.repositoryScanMaxDepth": 3,
     "explorer.confirmPasteNative": false,
@@ -214,5 +214,6 @@
     "github.copilot.nextEditSuggestions.enabled": true,
     "scm.defaultViewMode": "tree",
     "scm.alwaysShowRepositories": true,
-    "terminal.explorerKind": "both"
+    "terminal.explorerKind": "both",
+    "problems.decorations.enabled": false
 }
