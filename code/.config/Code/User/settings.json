@@ -202,8 +202,6 @@
             }
         }
     },
-    "terminal.integrated.fontFamily": "Roboto Mono",
-    "terminal.integrated.fontLigatures.enabled": true,
     "git.openRepositoryInParentFolders": "never",
     "git.autofetchPeriod": 300,
     "clangd.path": "~/.config/Code/User/globalStorage/llvm-vs-code-extensions.vscode-clangd/install/22.1.0/clangd_22.1.0/bin/clangd",
@@ -215,5 +213,6 @@
     "scm.defaultViewMode": "tree",
     "scm.alwaysShowRepositories": true,
     "terminal.explorerKind": "both",
-    "problems.decorations.enabled": false
+    "problems.decorations.enabled": false,
+    "editor.fontFamily": "JetBrainsMono Nerd Font Mono",
 }
