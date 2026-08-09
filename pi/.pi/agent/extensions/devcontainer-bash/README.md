@@ -10,11 +10,13 @@ container:
 | What | Where it comes from |
 |---|---|
 | Workspace root | Walk up from pi's cwd to the nearest `.devcontainer/` |
-| Container | `devcontainer.local_folder` label → container name == workspace folder name → `container` config |
-| Exec user | `user` config → `remoteUser`/`containerUser` in devcontainer.json → `docker inspect Config.User` |
+| Container | `devcontainer.local_folder` label → container name == workspace folder name → `<folder>-…` prefix (compose) → `container` config |
+| Exec user | `user` config → `remoteUser`/`containerUser` in devcontainer.json (`${localEnv:X}`/`${env:X}` substituted from the host, e.g. `"${localEnv:USER}"`) → `docker inspect Config.User` |
 | Extra env | `remoteEnv` in devcontainer.json (`${localEnv:X}` supported) + `env` config |
 | Shell | `bash -ic` by default (loads `~/.bashrc`, faithful interactive shell); job-control stderr noise is filtered |
 | Host↔container path | `workspaceFolder` in devcontainer.json (`${localWorkspaceFolder}` supported); same-path bind mounts map 1:1 |
+| Timeout / abort | The command's in-container process group is killed (killing only the docker CLI would leave it running in the container) |
+| Status | TUI footer indicator: `🐳 g1_ws · devcontainer (marc)` (blue) when routed, `○ g1_ws · host shell (no container)` (dim) when the container isn't running; nothing is shown when routing is off or outside a devcontainer workspace |
 
 ## Install
 
@@ -34,8 +36,16 @@ auto-detects. Changes are hot-reloaded with `/reload`.
 - **Per project**: `.pi/devcontainer-bash.json` → `{ "enabled": false }`
 - **Globally**: `~/.pi/agent/extensions/devcontainer-bash.json` → `{ "enabled": false }`
 - **One run**: `pi --no-devcontainer-bash`
-- **Interactive**: `/devcontainer-bash status | recheck | on | off`
-  (`on`/`off` persist `enabled` to the project's `.pi/devcontainer-bash.json`)
+- **Interactive**: `/devcontainer-bash status | recheck | on | off | toggle`
+  (`on`/`off`/`toggle` persist `enabled` to the project's `.pi/devcontainer-bash.json`,
+  so the choice survives restarts; `status` prints the full routing details,
+  `recheck` forces container detection)
+- **Status indicator**: the TUI footer shows the live routing state — a blue
+  `🐳 g1_ws · devcontainer (marc)` when bash runs inside the container, a dim
+  `○ g1_ws · host shell (no container)` when the devcontainer exists but isn't
+  running. Nothing is displayed when routing is switched off or in workspaces
+  without a devcontainer config. The indicator is refreshed at session start,
+  at each turn, and on every bash call.
 - **No container running**: bash falls back to the host shell
   (`whenNoContainer: "pass-through"`, default) or fails loudly
   (`"error"`), and re-detects automatically once the container starts.

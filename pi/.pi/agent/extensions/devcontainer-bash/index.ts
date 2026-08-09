@@ -11,21 +11,35 @@
  *     to the nearest `.devcontainer/` directory.
  *   - The container is detected via the `devcontainer.local_folder` label
  *     (stamped by the devcontainers CLI), falling back to a container whose
- *     name equals the workspace folder name, falling back to an explicit
- *     `container` config value.
+ *     name equals the workspace folder name, falling back to a
+ *     `<folder>-…`-prefixed name (docker compose), falling back to an
+ *     explicit `container` config value.
  *   - The exec user comes from config, then `remoteUser`/`containerUser` in
- *     the project's devcontainer.json, then the container's own `Config.User`.
+ *     the project's devcontainer.json (`${localEnv:X}` / `${env:X}` are
+ *     substituted from the host environment — e.g. `"${localEnv:USER}"`),
+ *     then the container's own `Config.User`. Unresolvable values fall
+ *     through to the next candidate instead of reaching `docker exec`.
  *   - Extra env is taken from the project's `remoteEnv` (with `${localEnv:X}`
  *     substitution) plus config overrides.
  *   - Host cwd is translated to the container using the devcontainer's
  *     `workspaceFolder` (with `${localWorkspaceFolder}` substitution). A
  *     same-path bind mount (compose style) maps 1:1 automatically.
+ *   - Timeouts and aborts kill the command's in-container process group.
+ *     Killing only the docker CLI would leave the command running inside the
+ *     container (verified: `sleep 60` survived a client kill).
  *
  * On/off:
  *   - Auto-loaded from `~/.pi/agent/extensions/` (hot-reload with `/reload`).
  *   - `enabled: false` in config disables it (global or per project).
  *   - `pi --no-devcontainer-bash` disables it for a run.
- *   - `/devcontainer-bash status|recheck|on|off` shows state or toggles.
+ *   - `/devcontainer-bash status|recheck|on|off|toggle` shows state or toggles
+ *     (on/off/toggle persist `enabled` to the project's `.pi/devcontainer-bash.json`).
+ *   - A footer status indicator (TUI) shows the routing state: an
+ *     accent-colored (blue) `🐳 g1_ws · devcontainer (marc)` when commands
+ *     run inside the container, a dim `○ g1_ws · host shell (no container)`
+ *     when no container is running. Nothing is shown when routing is off or
+ *     outside a devcontainer workspace. Refreshed at session start, each
+ *     turn, and on every bash call.
  *   - If no running container is found, bash falls back to the host shell
  *     (or errors, per `whenNoContainer`). Detection re-runs on a short TTL,
  *     so starting the devcontainer later is picked up automatically.
@@ -50,14 +64,17 @@
  */
 
 import { spawn, execFile } from "node:child_process";
+import { randomUUID } from "node:crypto";
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { basename, dirname, isAbsolute, join, posix, relative, resolve } from "node:path";
+import { StringDecoder } from "node:string_decoder";
 import {
 	CONFIG_DIR_NAME,
 	createBashTool,
 	getAgentDir,
 	type BashOperations,
 	type ExtensionAPI,
+	type ExtensionContext,
 } from "@earendil-works/pi-coding-agent";
 
 // ---------------------------------------------------------------------------
@@ -217,12 +234,13 @@ function escapeNameFilter(name: string): string {
  * 1. `devcontainer.local_folder` label (stamped by the devcontainers CLI)
  * 2. a plain `local_folder` label (some tooling)
  * 3. a container named after the workspace folder (compose with explicit container_name)
- * 4. an explicit `container` config value (trusted even if `ps` fails —
+ * 4. a `<workspace-folder>-…` prefixed name (docker compose default naming)
+ * 5. an explicit `container` config value (trusted even if `ps` fails —
  *    `docker exec` will surface a precise error then)
  */
 export async function findContainerId(root: string, explicit?: string): Promise<string | null> {
 	if (explicit && explicit !== "auto") {
-		const r = await runDocker(["ps", "-q", "--filter", `name=^/${escapeNameFilter(explicit)}$`]);
+		const r = await runDocker(["ps", "-q", "--no-trunc", "--filter", `name=^/${escapeNameFilter(explicit)}$`]);
 		return firstLine(r.stdout) ?? explicit;
 	}
 	const labelCandidates = [
@@ -234,8 +252,32 @@ export async function findContainerId(root: string, explicit?: string): Promise<
 		const id = firstLine(r.stdout);
 		if (id) return id;
 	}
-	const r = await runDocker(["ps", "-q", "--filter", `name=^/${escapeNameFilter(basename(root))}$`]);
-	return firstLine(r.stdout);
+	const base = escapeNameFilter(basename(root));
+	for (const filter of [`name=^/${base}$`, `name=^/${base}-`]) {
+		const r = await runDocker(["ps", "-q", "--no-trunc", "--filter", filter]);
+		const id = firstLine(r.stdout);
+		if (id) return id;
+	}
+	return null;
+}
+
+/**
+ * Resolve a devcontainer.json value with `${localEnv:X}` / `${env:X}`
+ * substitution from the host environment. Returns null when the value is an
+ * unsupported or unresolvable substitution (callers skip it), otherwise the
+ * substituted value.
+ */
+export function resolveEnvSubstitution(value: string): string | null {
+	const trimmed = value.trim();
+	const m = ENV_VAR_PATTERN.exec(trimmed);
+	if (m) {
+		const hostValue = process.env[m[1]];
+		return hostValue !== undefined && hostValue !== "" ? hostValue : null;
+	}
+	// Unsupported substitution (e.g. ${containerWorkspaceFolder}) — skip rather
+	// than pass garbage on.
+	if (trimmed.includes("${")) return null;
+	return trimmed;
 }
 
 /** Resolve the exec user: config → devcontainer.json → container Config.User. */
@@ -245,8 +287,14 @@ export async function resolveUser(
 	configUser?: string,
 ): Promise<string | undefined> {
 	if (configUser && configUser !== "auto") return configUser;
-	if (dc?.remoteUser) return dc.remoteUser;
-	if (dc?.containerUser) return dc.containerUser;
+	// devcontainer.json frequently uses ${localEnv:USER} here; resolve it from
+	// the host environment. Unresolvable values fall through to the container's
+	// default user instead of breaking every docker exec.
+	for (const candidate of [dc?.remoteUser, dc?.containerUser]) {
+		if (!candidate) continue;
+		const user = resolveEnvSubstitution(candidate);
+		if (user) return user;
+	}
 	const r = await runDocker(["inspect", "--format", "{{.Config.User}}", containerId]);
 	const user = r.stdout.trim();
 	return user && user !== "<no value>" ? user : undefined;
@@ -318,15 +366,9 @@ export function resolveEnvEntries(
 			if (hv !== undefined) entries.set(key, hv);
 			return;
 		}
-		const m = ENV_VAR_PATTERN.exec(value.trim());
-		if (m) {
-			const hv = host[m[1]];
-			if (hv !== undefined) entries.set(m[1], hv);
-			return;
-		}
-		// Unsupported substitution — skip rather than inject garbage.
-		if (value.includes("${")) return;
-		entries.set(key, value);
+		const resolved = resolveEnvSubstitution(value);
+		if (resolved === null) return; // unresolvable — skip rather than inject garbage
+		entries.set(key, resolved);
 	};
 	for (const [k, v] of Object.entries(dc?.remoteEnv ?? {})) add(k, v);
 	for (const [k, v] of Object.entries(configEnv ?? {})) add(k, v);
@@ -341,11 +383,12 @@ const JOB_CONTROL_NOISE = [/^bash: cannot set terminal process group/, /^bash: n
 
 export class JobControlNoiseFilter {
 	private buffer = "";
+	private decoder = new StringDecoder("utf8");
 	constructor(private readonly enabled: boolean) {}
 
 	transform(chunk: Buffer): Buffer {
 		if (!this.enabled) return chunk;
-		this.buffer += chunk.toString("utf8");
+		this.buffer += this.decoder.write(chunk);
 		let out = "";
 		let idx: number;
 		while ((idx = this.buffer.indexOf("\n")) !== -1) {
@@ -357,8 +400,8 @@ export class JobControlNoiseFilter {
 	}
 
 	flush(): Buffer {
-		if (!this.enabled || !this.buffer) return Buffer.alloc(0);
-		const rest = this.buffer;
+		if (!this.enabled) return Buffer.alloc(0);
+		const rest = this.buffer + this.decoder.end();
 		this.buffer = "";
 		return JOB_CONTROL_NOISE.some((re) => re.test(rest)) ? Buffer.alloc(0) : Buffer.from(rest);
 	}
@@ -368,6 +411,55 @@ export class JobControlNoiseFilter {
 // Docker bash operations
 // ---------------------------------------------------------------------------
 
+const MAX_TIMEOUT_MS = 2_147_483_647;
+const MAX_TIMEOUT_SECONDS = MAX_TIMEOUT_MS / 1000;
+
+/** pi passes the bash `timeout` parameter in seconds; node timers want ms. */
+export function resolveTimeoutMs(timeout?: number): number | undefined {
+	if (timeout === undefined) return undefined;
+	if (!Number.isFinite(timeout) || timeout <= 0) {
+		throw new Error("Invalid timeout: must be a finite number of seconds");
+	}
+	const timeoutMs = timeout * 1000;
+	if (timeoutMs > MAX_TIMEOUT_MS) {
+		throw new Error(`Invalid timeout: maximum is ${MAX_TIMEOUT_SECONDS} seconds`);
+	}
+	return timeoutMs;
+}
+
+function newToken(): string {
+	return randomUUID().replace(/-/g, "").slice(0, 12);
+}
+
+/**
+ * Kill the in-container process group of a timed-out/aborted command.
+ *
+ * The exec'd bash is its own session and process-group leader (pid==pgid),
+ * and the script records its pid in a per-exec token file inside the
+ * container. Killing only the docker CLI would leave the command running
+ * inside the container (the exec session survives client disconnects).
+ *
+ * Fire-and-forget: spawned detached from the caller's flow; a best-effort
+ * SIGKILL escalation follows after a short grace period.
+ */
+export function cleanupContainerProcessGroup(
+	containerId: string,
+	user: string | undefined,
+	token: string,
+): void {
+	const pgidFile = `/tmp/pi-dcb-${token}.pgid`;
+	const script =
+		`p=$(cat ${pgidFile} 2>/dev/null) || exit 0; ` +
+		`rm -f ${pgidFile}; ` +
+		`kill -TERM -- -$p 2>/dev/null || kill -TERM -$p 2>/dev/null; ` +
+		`(sleep 1; kill -KILL -- -$p 2>/dev/null || kill -KILL -$p 2>/dev/null) &`;
+	const args = ["exec"];
+	if (user) args.push("-u", user);
+	args.push(containerId, "bash", "-lc", script);
+	const child = spawn("docker", args, { stdio: "ignore" });
+	child.on("error", () => {});
+}
+
 /**
  * BashOperations that execute inside the devcontainer:
  *   docker exec -i [-u user] -w <containerCwd> [-e K=V ...] <container> bash -ic <command>
@@ -375,10 +467,20 @@ export class JobControlNoiseFilter {
 export function createDockerBashOperations(resolved: ResolvedDevcontainer): BashOperations {
 	return {
 		async exec(command, cwd, { onData, signal, timeout }) {
+			const timeoutMs = resolveTimeoutMs(timeout);
+			if (signal?.aborted) throw new Error("aborted");
+
 			const containerCwd = resolved.toContainerPath(resolve(cwd));
-			// Non-interactive mode: best-effort source of ~/.bashrc (a guard in
-			// the rc may still skip it — that's why interactive is the default).
-			const script = resolved.interactive ? command : `source ~/.bashrc 2>/dev/null; ${command}`;
+			const token = newToken();
+			const pgidFile = `/tmp/pi-dcb-${token}.pgid`;
+			// Record the exec'd bash's pid (it is its own group leader) and
+			// remove the record when the command completes normally, so a
+			// timeout/abort can kill the exact process group and a stale pid
+			// is never reused against a different group.
+			const script =
+				`echo $$ >${pgidFile} 2>/dev/null; trap 'rm -f ${pgidFile}' EXIT; ` +
+				(resolved.interactive ? command : `source ~/.bashrc 2>/dev/null; ${command}`);
+
 			const args = ["exec", "-i"];
 			if (resolved.user) args.push("-u", resolved.user);
 			args.push("-w", containerCwd);
@@ -386,24 +488,75 @@ export function createDockerBashOperations(resolved: ResolvedDevcontainer): Bash
 			args.push(resolved.containerId, "bash", resolved.interactive ? "-ic" : "-lc", script);
 
 			const filter = new JobControlNoiseFilter(resolved.filterJobControlNoise);
-			const child = spawn("docker", args, { signal, timeout });
+			// stdin: ignore — mirrors pi's local bash backend and avoids the
+			// docker CLI holding the exec session open on an idle stdin pipe.
+			const child = spawn("docker", args, { stdio: ["ignore", "pipe", "pipe"] });
 			child.stdout?.on("data", (d: Buffer) => onData(filter.transform(d)));
 			child.stderr?.on("data", (d: Buffer) => onData(filter.transform(d)));
 
-			return new Promise((res, rej) => {
-				child.on("error", (err) => {
-					if (isDockerMissing(err)) {
-						rej(new Error("devcontainer-bash: `docker` CLI not found on the host."));
-					} else {
-						rej(err);
+			let timedOut = false;
+			let timeoutHandle: NodeJS.Timeout | undefined;
+			let terminated = false;
+			const terminate = () => {
+				if (terminated) return;
+				terminated = true;
+				// Detach from the docker CLI so we don't wait for it, then kill
+				// the command's process group inside the container.
+				try {
+					child.kill("SIGTERM");
+				} catch {
+					// already gone
+				}
+				cleanupContainerProcessGroup(resolved.containerId, resolved.user, token);
+				// Escalate if the client ignores SIGTERM.
+				setTimeout(() => {
+					try {
+						child.kill("SIGKILL");
+					} catch {
+						// already gone
 					}
+				}, 2000).unref();
+			};
+			if (timeoutMs !== undefined) {
+				timeoutHandle = setTimeout(() => {
+					timedOut = true;
+					terminate();
+				}, timeoutMs);
+				timeoutHandle.unref();
+			}
+			const onAbort = () => terminate();
+			if (signal) signal.addEventListener("abort", onAbort, { once: true });
+
+			try {
+				return await new Promise<{ exitCode: number | null }>((res, rej) => {
+					let settled = false;
+					const settle = (fn: () => void) => {
+						if (!settled) {
+							settled = true;
+							fn();
+						}
+					};
+					child.on("error", (err) => {
+						settle(() =>
+							rej(isDockerMissing(err) ? new Error("devcontainer-bash: `docker` CLI not found on the host.") : err),
+						);
+					});
+					child.on("close", (code, signalCode) => {
+						const tail = filter.flush();
+						if (tail.length) onData(tail);
+						settle(() => {
+							// Match pi's local backend: abort and timeout are
+							// reported as errors, not as successful exits.
+							if (signal?.aborted) rej(new Error("aborted"));
+							else if (timedOut) rej(new Error(`timeout:${timeout}`));
+							else res({ exitCode: signalCode ? null : code });
+						});
+					});
 				});
-				child.on("close", (code, signalCode) => {
-					const tail = filter.flush();
-					if (tail.length) onData(tail);
-					res({ exitCode: signalCode ? null : code });
-				});
-			});
+			} finally {
+				if (timeoutHandle) clearTimeout(timeoutHandle);
+				if (signal) signal.removeEventListener("abort", onAbort);
+			}
 		},
 	};
 }
@@ -420,7 +573,12 @@ export async function resolveRoute(cwd: string, config: DevcontainerBashConfig):
 	const dc = readDevcontainerJson(root);
 	const containerId = await findContainerId(root, config.container);
 	if (!containerId) {
-		const reason = `No running devcontainer found for ${root}. Start it (e.g. VSCode → Reopen in Container), or set "container" in the devcontainer-bash config.`;
+		let reason = `No running devcontainer found for ${root}. Start it (e.g. VSCode → Reopen in Container), or set "container" in the devcontainer-bash config.`;
+		// Surface docker daemon problems (daemon down, CLI broken) instead of
+		// silently falling back to the host shell.
+		const diag = await runDocker(["ps", "-q"]);
+		const errLine = firstLine(diag.stderr);
+		if (errLine) reason += ` Docker error: ${errLine}`;
 		return config.whenNoContainer === "error" ? { kind: "error", reason } : { kind: "pass-through", reason };
 	}
 
@@ -443,6 +601,39 @@ export async function resolveRoute(cwd: string, config: DevcontainerBashConfig):
 }
 
 // ---------------------------------------------------------------------------
+// Footer status indicator
+// ---------------------------------------------------------------------------
+
+export type RouteStatusLabel = { symbol: string; text: string; color: "accent" | "warning" | "dim" } | null;
+
+/**
+ * Footer status for the routing state. Returns null when nothing should be
+ * shown: outside devcontainer workspaces, or when routing is switched off
+ * (config `enabled: false`, `--no-devcontainer-bash`, `/devcontainer-bash off`).
+ */
+export function routeStatusLabel(root: string | null, mode: RouteMode): RouteStatusLabel {
+	if (!root) return null;
+	const name = basename(root);
+	switch (mode.kind) {
+		case "routed": {
+			const r = mode.resolved;
+			return {
+				symbol: "🐳",
+				text: `${name} · devcontainer${r.user ? ` (${r.user})` : ""}`,
+				color: "accent",
+			};
+		}
+		case "inert":
+			// Routing switched off — no indicator at all.
+			return null;
+		case "pass-through":
+			return { symbol: "○", text: `${name} · host shell (no container)`, color: "dim" };
+		case "error":
+			return { symbol: "○", text: `${name} · error — no container`, color: "warning" };
+	}
+}
+
+// ---------------------------------------------------------------------------
 // Extension
 // ---------------------------------------------------------------------------
 
@@ -453,13 +644,31 @@ export default function (pi: ExtensionAPI) {
 		default: false,
 	});
 
+	const STATUS_KEY = "devcontainer-bash";
+
 	/** In-memory toggle set by `/devcontainer-bash on|off`; null = use config. */
 	let enabledOverride: boolean | null = null;
 	let cache: { cwd: string; at: number; ttlMs: number; mode: RouteMode } | null = null;
 	let notifiedPassThrough = false;
+	/** Workspace root of the last resolve; null = not a devcontainer workspace. */
+	let lastRoot: string | null = null;
+
+	/** Show the routing state in the TUI footer (no-op outside TUI/RPC). */
+	function updateStatus(ctx: ExtensionContext, mode: RouteMode): void {
+		if (!ctx.hasUI) return;
+		const label = routeStatusLabel(lastRoot, mode);
+		if (!label) {
+			ctx.ui.setStatus(STATUS_KEY, undefined);
+			return;
+		}
+		// Whole line in a single color: accent (blue) when routed, dim/warning
+		// for the transient no-container states.
+		ctx.ui.setStatus(STATUS_KEY, ctx.ui.theme.fg(label.color, `${label.symbol} ${label.text}`));
+	}
 
 	async function resolve(cwd: string, force = false): Promise<RouteMode> {
 		const root = findWorkspaceRoot(cwd);
+		lastRoot = root;
 		if (!root || pi.getFlag("no-devcontainer-bash") || enabledOverride === false) return { kind: "inert" };
 
 		const now = Date.now();
@@ -473,11 +682,31 @@ export default function (pi: ExtensionAPI) {
 		return mode;
 	}
 
+	// Keep the footer status current: at session start (eager), each turn
+	// (non-blocking, cached), and on every bash call below.
+	pi.on("session_start", async (_event, ctx) => {
+		if (!ctx.hasUI) return;
+		try {
+			const mode = await resolve(ctx.cwd, true);
+			updateStatus(ctx, mode);
+		} catch {
+			// Best-effort status refresh.
+		}
+	});
+
+	pi.on("turn_start", (_event, ctx) => {
+		if (!ctx.hasUI) return;
+		resolve(ctx.cwd)
+			.then((mode) => updateStatus(ctx, mode))
+			.catch(() => {});
+	});
+
 	pi.registerTool({
 		...createBashTool(process.cwd()),
 		label: "bash (devcontainer)",
 		async execute(id, params, signal, onUpdate, ctx) {
 			const mode = await resolve(ctx.cwd);
+			updateStatus(ctx, mode);
 			if (mode.kind === "pass-through") {
 				if (!notifiedPassThrough && ctx.hasUI) {
 					notifiedPassThrough = true;
@@ -502,18 +731,25 @@ export default function (pi: ExtensionAPI) {
 	// `!` / `!!` user commands route into the container too.
 	pi.on("user_bash", async (_event, ctx) => {
 		const mode = await resolve(ctx.cwd);
+		updateStatus(ctx, mode);
 		if (mode.kind !== "routed") return undefined;
 		return { operations: createDockerBashOperations(mode.resolved) };
 	});
 
 	pi.registerCommand("devcontainer-bash", {
-		description: "Devcontainer bash routing: status, recheck, on, off",
+		description: "Devcontainer bash routing: status, recheck, on, off, toggle",
 		getArgumentCompletions: (prefix: string) =>
-			["status", "recheck", "on", "off"]
+			["status", "recheck", "on", "off", "toggle"]
 				.filter((c) => c.startsWith(prefix))
 				.map((c) => ({ value: c, label: c })),
 		handler: async (args, ctx) => {
-			const action = (args ?? "").trim().toLowerCase();
+			let action = (args ?? "").trim().toLowerCase();
+			if (action === "toggle") {
+				const root = findWorkspaceRoot(ctx.cwd);
+				const config = root ? loadMergedConfig(root) : null;
+				enabledOverride = !(enabledOverride ?? (config?.enabled !== false));
+				action = enabledOverride ? "on" : "off";
+			}
 			if (action === "on" || action === "off") {
 				enabledOverride = action === "on";
 				const root = findWorkspaceRoot(ctx.cwd);
@@ -527,10 +763,13 @@ export default function (pi: ExtensionAPI) {
 					}
 				}
 				ctx.ui.notify(`devcontainer-bash: ${action} (persisted to ${root ? projectConfigPath(root) : "memory"})`, "info");
+				const mode = await resolve(ctx.cwd, true);
+				updateStatus(ctx, mode);
 				return;
 			}
 			if (action === "recheck") cache = null;
 			const mode = await resolve(ctx.cwd, true);
+			updateStatus(ctx, mode);
 			const lines: string[] = [`devcontainer-bash: ${mode.kind}`];
 			if (mode.kind === "routed") {
 				const r = mode.resolved;
