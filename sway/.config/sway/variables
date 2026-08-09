@@ -1,0 +1,23 @@
+### Variables
+#
+# Logo key. Use Mod1 for Alt.
+set $mod Mod4
+# Home row direction keys, like vim
+set $left h
+set $down j
+set $up k
+set $right l
+
+# Your preferred terminal emulator
+
+set $term ghostty
+
+# Your preferred application launcher
+
+set $menu wmenu-run
+
+set $browser brave-browser
+set $editor code
+
+# Scripts bundled with this config (kept in the config dir for portability)
+set $scripts ~/.config/sway/scripts

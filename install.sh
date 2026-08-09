@@ -14,6 +14,7 @@ Pin: release o=LP-PPA-mozillateam
 Pin-Priority: 1001
 ' | sudo tee /etc/apt/preferences.d/mozilla-firefox
 sudo apt install firefox
+
 # Install Brave
 sudo apt install curl
 curl -fsS https://dl.brave.com/install.sh | sh
@@ -101,3 +102,10 @@ sudo flatpak override --filesystem=$HOME/.icons
 flatpak override --user --filesystem=xdg-config/gtk-4.0
 sudo flatpak override --filesystem=xdg-config/gtk-4.0
 ln -s ~/.themes/Gruvbox-BL-MB-Dark ~/.local/share/themes/Gruvbox-BL-MB-Dark # is this necessary?
+
+
+# Sway
+sudo apt install sway swaylock waybar
+# May have to edit the gdm3 wayland_sessions to add nvidia compatibility
+cd ~/dotfiles
+stow sway

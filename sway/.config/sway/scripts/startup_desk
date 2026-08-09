@@ -1,0 +1,14 @@
+#!/bin/sh
+# startup_desk — bring up desk 1 when the session starts.
+# sway runs config `exec` lines only at startup (they are ignored on reload),
+# but outputs may still be settling then, so retry briefly until they are.
+
+i=0
+while [ "$i" -lt 10 ]; do
+	if "$(dirname "$0")/goto_desk" 1 2>/dev/null; then
+		exit 0
+	fi
+	sleep 0.5
+	i=$((i + 1))
+done
+exit 1

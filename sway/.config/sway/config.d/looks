@@ -1,0 +1,8 @@
+default_border pixel 2
+default_floating_border pixel 2
+
+gaps inner 4
+hide_edge_borders smart
+
+# Hide the cursor after 3s of inactivity
+seat * hide_cursor 3000

@@ -1,0 +1,14 @@
+include /etc/sway/config.d/*
+
+# Shared defaults first; machine overlays (mithrandir/tecnalia) may override
+include variables
+include mithrandir
+# include tecnalia
+
+include config.d/*
+
+# Regenerate the waybar audio device menu, then start waybar (the menu XML
+# is read only at startup). sway re-runs exec_always on reload without
+# stopping the old instance, so kill any previous waybar first.
+exec_always sh -c 'pkill -x waybar 2>/dev/null; /home/marc/.config/waybar/audio_menu.sh; exec waybar'
+exec_always autotiling

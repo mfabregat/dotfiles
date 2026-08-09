@@ -1,0 +1,68 @@
+focus_follows_mouse no
+
+#
+# Desks (dynamic scheme): workspaces are <desk><letter> (0a..9c...). Desk 0
+# is the background-apps desk ($mod+grave, e.g. spotify, outlook). The
+# machine overlay (mithrandir/tecnalia) defines $desks (default 9) and
+# $a..$i -> letters; desk scripts only use connected outputs.
+#
+
+bindsym $mod+1 exec $scripts/goto_desk 1
+bindsym $mod+2 exec $scripts/goto_desk 2
+bindsym $mod+3 exec $scripts/goto_desk 3
+bindsym $mod+4 exec $scripts/goto_desk 4
+bindsym $mod+5 exec $scripts/goto_desk 5
+bindsym $mod+6 exec $scripts/goto_desk 6
+bindsym $mod+7 exec $scripts/goto_desk 7
+bindsym $mod+8 exec $scripts/goto_desk 8
+bindsym $mod+9 exec $scripts/goto_desk 9
+
+# Move container to a desk (same output), then switch the whole desk there
+bindsym $mod+Shift+1 exec $scripts/move_to_desk 1
+bindsym $mod+Shift+2 exec $scripts/move_to_desk 2
+bindsym $mod+Shift+3 exec $scripts/move_to_desk 3
+bindsym $mod+Shift+4 exec $scripts/move_to_desk 4
+bindsym $mod+Shift+5 exec $scripts/move_to_desk 5
+bindsym $mod+Shift+6 exec $scripts/move_to_desk 6
+bindsym $mod+Shift+7 exec $scripts/move_to_desk 7
+bindsym $mod+Shift+8 exec $scripts/move_to_desk 8
+bindsym $mod+Shift+9 exec $scripts/move_to_desk 9
+
+# Background-apps desk (spotify, outlook, ...)
+bindsym $mod+grave exec $scripts/goto_desk 0
+bindsym $mod+Shift+grave exec $scripts/move_to_desk 0
+
+# Start on desk 1 (sway runs exec only at startup, not on reload)
+exec $scripts/startup_desk
+
+
+
+# Exit sway (logs you out of your Wayland session)
+bindsym $mod+Shift+e exec swaynag -t warning -m 'You pressed the exit shortcut. Do you really want to exit sway? This will end your Wayland session.' -B 'Yes, exit sway' 'swaymsg exit'
+
+# Moving around:
+#
+# Move your focus around
+bindsym $mod+$left focus left
+bindsym $mod+$down focus down
+bindsym $mod+$up focus up
+bindsym $mod+$right focus right
+# Or use $mod+[up|down|left|right]
+bindsym $mod+Left focus left
+bindsym $mod+Down focus down
+bindsym $mod+Up focus up
+bindsym $mod+Right focus right
+
+# Move the focused window with the same, but add Shift
+bindsym $mod+Shift+$left move left
+bindsym $mod+Shift+$down move down
+bindsym $mod+Shift+$up move up
+bindsym $mod+Shift+$right move right
+# Ditto, with arrow keys
+bindsym $mod+Shift+Left move left
+bindsym $mod+Shift+Down move down
+bindsym $mod+Shift+Up move up
+bindsym $mod+Shift+Right move right
+
+
+default_orientation auto

@@ -1,0 +1,24 @@
+### Input configuration
+#
+# Example configuration:
+#
+#   input type:touchpad {
+#       dwt enabled
+#       tap enabled
+#       natural_scroll enabled
+#       middle_emulation enabled
+#   }
+#
+#   input type:keyboard {
+#       xkb_layout "eu"
+#   }
+#
+# You can also configure each device individually.
+# Read `man 5 sway-input` for more information about this section.
+
+input type:keyboard {
+    xkb_layout us
+    xkb_variant altgr-intl
+    repeat_rate 50
+    repeat_delay 250
+}
