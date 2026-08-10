@@ -107,6 +107,7 @@
                 "firefox"
             ],
             "tooltip": false,
+            "on-click-middle": "/home/marc/.config/waybar/player_focus.sh",
         },
         "load": {
             "format": " {}"
