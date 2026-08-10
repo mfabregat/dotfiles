@@ -215,4 +215,5 @@
     "terminal.explorerKind": "both",
     "problems.decorations.enabled": false,
     "editor.fontFamily": "JetBrainsMono Nerd Font Mono",
+    "terminal.integrated.fontLigatures.enabled": true,
 }
