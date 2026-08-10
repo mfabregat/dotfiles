@@ -17,6 +17,8 @@ bindsym $mod+b exec $browser
 
 bindsym $mod+s exec spotify
 
+bindsym Print exec grimshot --notify savecopy anything
+
 # Drag floating windows by holding down $mod and left mouse button.
 # Resize them with right mouse button + $mod.
 # Despite the name, also works for non-floating windows.
@@ -27,6 +29,7 @@ floating_modifier $mod normal
 # Reload the configuration file
 bindsym $mod+Shift+r reload
 
+bindsym $mod+space input type:keyboard xkb_switch_layout next
 
 #
 # Layout stuff:
@@ -49,7 +52,7 @@ bindsym $mod+f fullscreen
 bindsym $mod+Shift+space floating toggle
 
 # Swap focus between the tiling area and the floating area
-bindsym $mod+space focus mode_toggle
+# bindsym $mod+space focus mode_toggle
 
 # Move focus to the parent container
 bindsym $mod+a focus parent
@@ -103,5 +106,3 @@ bindsym --locked XF86AudioMicMute exec pactl set-source-mute \@DEFAULT_SOURCE@ t
 # Special keys to adjust brightness via brightnessctl
 bindsym --locked XF86MonBrightnessDown exec brightnessctl set 5%-
 bindsym --locked XF86MonBrightnessUp exec brightnessctl set 5%+
-# Special key to take a screenshot with grim
-bindsym Print exec grim

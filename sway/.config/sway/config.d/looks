@@ -4,5 +4,7 @@ default_floating_border pixel 2
 gaps inner 4
 hide_edge_borders smart
 
-# Hide the cursor after 3s of inactivity
-seat * hide_cursor 3000
+# Hide the cursor after 2s of inactivity
+seat * hide_cursor 2000
+
+for_window [all] opacity 0.95

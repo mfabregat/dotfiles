@@ -16,7 +16,8 @@ set $term ghostty
 
 set $menu wmenu-run
 
-set $browser brave-browser
+# set $browser brave-browser
+set $browser firefox
 set $editor code
 
 # Scripts bundled with this config (kept in the config dir for portability)
