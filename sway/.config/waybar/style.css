@@ -1,5 +1,6 @@
 * {
     font-size: 14px;
+    /* border-radius: 5px 5px 0 0; */
     border-radius: 5px;
 }
 
@@ -9,7 +10,7 @@ window#waybar {
          curl -sL -o /tmp/symbols.zip https://github.com/ryanoasis/nerd-fonts/releases/latest/download/NerdFontsSymbolsOnly.zip
          unzip -o /tmp/symbols.zip '*.ttf' -d ~/.local/share/fonts && fc-cache -f
        `fonts-font-awesome` (FontAwesome 4) is also required. */
-    font-family: "JetBrainsMono Nerd Font", FontAwesome, monospace;
+    font-family: "NotoSans Nerd Font Propo", FontAwesome, monospace;
     background-color: transparent;
     border-bottom: 0px;
     color: #ebdbb2;
@@ -60,7 +61,7 @@ button:hover {
 } */
 
 #workspaces {
-    background-color: #282828;
+    background-color: rgba(40, 40, 40, 0.9);
 }
 
 #workspaces button {
@@ -106,9 +107,17 @@ button:hover {
 #cpu,
 #memory,
 #temperature,
-#custom-power {
+#custom-power,
+#network,
+#language {
     padding: 0 10px;
-    background-color: #282828;
+    background-color: rgba(40, 40, 40, 0.9);
+    color: #ebdbb2;
+}
+
+#taskbar {
+    padding: 0 4px;
+    background-color: rgba(40, 40, 40, 0.9);
     color: #ebdbb2;
 }
 
@@ -140,7 +149,7 @@ button:hover {
 
 @keyframes blink {
     to {
-        background-color: #282828;
+        background-color: rgba(40, 40, 40, 0.9);
         color: #ebdbb2;
     }
 }
@@ -161,7 +170,7 @@ label:focus {
 }
 
 #wireplumber.muted {
-    background-color: #458588;
+    background-color: #cc241d;
 }
 
 #tray>.passive {
