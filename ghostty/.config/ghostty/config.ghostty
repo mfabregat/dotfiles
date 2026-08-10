@@ -1,4 +1,5 @@
 theme = Gruvbox Dark
+font-family = "JetBrainsMono Nerd Font Mono"
 
 # Dynamic split based on available space
 keybind = alt+enter=new_split:auto
