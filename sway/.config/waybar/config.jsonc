@@ -208,14 +208,23 @@
         },
         "cpu": {
             "format": "{usage}% ",
+            "states": {
+                "warning": 70,
+                "critical": 90
+            },
             "tooltip": true
         },
         "memory": {
-            "format": "{}% "
+            "format": "{}% ",
+            "states": {
+                "warning": 70,
+                "critical": 90
+            }
         },
         "temperature": {
             // "thermal-zone": 2,
             "hwmon-path": "/sys/class/hwmon/hwmon1/temp1_input",
+            "warning-threshold": 60,
             "critical-threshold": 80,
             // "format-critical": "{temperatureC}°C {icon}",
             "format": "{temperatureC}°C {icon}",
@@ -232,13 +241,16 @@
         "network": {
             // "interface": "wlp2s0",
             "format": "{ifname}",
-            "format-wifi": "{essid} ({signalStrength}%) ",
-            "format-ethernet": "{ifname} ",
+            "format-wifi": "{essid} ",
+            "format-ethernet": "󰈀",
             "format-disconnected": "", //An empty format will hide the module.
-            "format-disconnected": "",
+            "states": {
+                "wifi-weak": 30,
+                "wifi-mid": 60,
+                "wifi-strong": 80
+            },
             "tooltip-format": "{ifname}",
             "tooltip-format-wifi": "{essid} ({signalStrength}%) ",
-            "tooltip-format-ethernet": "{ifname} ",
             "tooltip-format-disconnected": "Disconnected",
             "max-length": 50
         },

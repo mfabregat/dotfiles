@@ -197,3 +197,38 @@ label:focus {
 #scratchpad.empty {
     background: transparent;
 }
+
+/* Value-based coloring via module states */
+#temperature.warning {
+    color: #d79921;
+}
+
+#temperature.critical {
+    color: #fb4934;
+}
+
+#cpu.warning,
+#memory.warning {
+    color: #d79921;
+}
+
+#cpu.critical,
+#memory.critical {
+    color: #fb4934;
+}
+
+#network.ethernet {
+    color: #b8bb26;
+}
+
+#network.wifi-weak {
+    color: #fb4934;
+}
+
+#network.wifi-mid {
+    color: #d79921;
+}
+
+#network.wifi-strong {
+    color: #b8bb26;
+}
