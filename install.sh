@@ -105,7 +105,19 @@ ln -s ~/.themes/Gruvbox-BL-MB-Dark ~/.local/share/themes/Gruvbox-BL-MB-Dark # is
 
 
 # Sway
-sudo apt install sway swaylock waybar
+sudo apt install sway waybar swaylock playerctl grimshot
 # May have to edit the gdm3 wayland_sessions to add nvidia compatibility
 cd ~/dotfiles
 stow sway
+
+
+## Fonts: Noto for system/reading and JetBrainsMono for terminal/editor
+mkdir -p ~/.local/share/fonts
+cd /tmp
+curl -OL https://github.com/ryanoasis/nerd-fonts/releases/latest/download/JetBrainsMono.tar.xz
+tar -xf JetBrainsMono.tar.xz
+mv JetBrainsMono* ~/.local/share/fonts
+curl -OL https://github.com/ryanoasis/nerd-fonts/releases/latest/download/Noto.tar.xz
+tar -xf Noto.tar.xz
+mv Noto* ~/.local/share/fonts
+fc-cache -fv
