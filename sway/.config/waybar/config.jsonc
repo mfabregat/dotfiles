@@ -260,7 +260,7 @@
             "menu": "on-click",
             "menu-file": "/home/marc/.config/waybar/power_menu.xml",
             "menu-actions": {
-                "lock": "swaylock -f -c 282828",
+                "lock": "swaylock",
                 "logout": "swaymsg exit",
                 "suspend": "systemctl suspend",
                 "reboot": "systemctl reboot",

@@ -1,3 +1,32 @@
+@define-color dark0 #282828;
+@define-color dark1 #3c3836;
+@define-color dark2 #504945;
+@define-color dark3 #665c54;
+@define-color dark4 #7c6f64;
+@define-color gray #928374;
+
+@define-color light0 #fbf1c7;
+@define-color light1 #ebdbb2;
+@define-color light2 #d5c4a1;
+@define-color light3 #bdae93;
+@define-color light4 #a89984;
+
+@define-color bright_red #fb4934;
+@define-color bright_green #b8bb26;
+@define-color bright_yellow #fabd2f;
+@define-color bright_blue #83a598;
+@define-color bright_purple #d3869b;
+@define-color bright_aqua #8ec07c;
+@define-color bright_orange #fe8019;
+
+@define-color neutral_red #cc241d;
+@define-color neutral_green #98971a;
+@define-color neutral_yellow #d79921;
+@define-color neutral_blue #458588;
+@define-color neutral_purple #b16286;
+@define-color neutral_aqua #689d6a;
+@define-color neutral_orange #d65d0e;
+
 * {
     font-size: 14px;
     /* border-radius: 5px 5px 0 0; */
@@ -13,7 +42,7 @@ window#waybar {
     font-family: "NotoSans Nerd Font Propo", FontAwesome, monospace;
     background-color: transparent;
     border-bottom: 0px;
-    color: #ebdbb2;
+    color: @light0;
     transition-property: background-color;
     transition-duration: .5s;
 }
@@ -57,17 +86,17 @@ button {
 /*
 button:hover {
     background: inherit;
-    box-shadow: inset 0 -3px #ebdbb2;
+    box-shadow: inset 0 -3px @light0;
 } */
 
 #workspaces {
-    background-color: rgba(40, 40, 40, 0.9);
+    background-color: @dark0;
 }
 
 #workspaces button {
     padding: 0 5px;
     background-color: transparent;
-    color: #ebdbb2;
+    color: @light0;
     border-radius: 0;
 }
 
@@ -80,16 +109,16 @@ button:hover {
 }
 
 #workspaces button:hover {
-    color: #d79921;
+    color: @neutral_yellow;
 }
 
-#workspaces button.focused {
-    background-color: #665c54;
+#workspaces button.visible {
+    background-color: @dark3;
     /* box-shadow: inset 0 -3px #ffffff; */
 }
 
 #workspaces button.urgent {
-    background-color: #b16286;
+    background-color: @neutral_purple;
 }
 
 #idle_inhibitor,
@@ -102,7 +131,6 @@ button:hover {
 #backlight,
 #wireplumber,
 #tray,
-#mpris,
 #load,
 #cpu,
 #memory,
@@ -111,19 +139,23 @@ button:hover {
 #network,
 #language {
     padding: 0 10px;
-    background-color: rgba(40, 40, 40, 0.9);
-    color: #ebdbb2;
+    background-color: @dark0;
+    color: @light0;
 }
 
 #taskbar {
     padding: 0 4px;
-    background-color: rgba(40, 40, 40, 0.9);
-    color: #ebdbb2;
+    background-color: @dark0;
+    color: @light0;
+}
+
+#taskbar.empty {
+    background-color: transparent;
 }
 
 #mode {
-    background-color: #689d6a;
-    color: #282828;
+    background-color: @neutral_yellow;
+    color: @dark0;
     /* box-shadow: inset 0 -3px #ffffff; */
 }
 
@@ -143,21 +175,21 @@ button:hover {
 
 #battery.charging,
 #battery.plugged {
-    background-color: #98971a;
-    color: #282828;
+    background-color: @neutral_green;
+    color: @dark0;
 }
 
 @keyframes blink {
     to {
-        background-color: rgba(40, 40, 40, 0.9);
-        color: #ebdbb2;
+        background-color: @dark0;
+        color: @light0;
     }
 }
 
 /* Using steps() instead of linear as a timing function to limit cpu usage */
 #battery.critical:not(.charging) {
-    background-color: #cc241d;
-    color: #ebdbb2;
+    background-color: @neutral_red;
+    color: @light0;
     animation-name: blink;
     animation-duration: 0.5s;
     animation-timing-function: steps(12);
@@ -166,11 +198,11 @@ button:hover {
 }
 
 label:focus {
-    background-color: #000000;
+    background-color: @dark0;
 }
 
 #wireplumber.muted {
-    background-color: #cc241d;
+    background-color: @neutral_red;
 }
 
 #tray>.passive {
@@ -181,13 +213,20 @@ label:focus {
     -gtk-icon-effect: highlight;
 }
 
+#mpris {
+    padding: 0 10px;
+    background-color: @dark4;
+    color: @light0;
+}
+
 #mpris.playing {
-    background-color: #d79921;
-    color: #282828;
+    background-color: @neutral_aqua;
+    color: @dark0;
+    font-weight: bold;
 }
 
 #custom-power:hover {
-    color: #cc241d;
+    color: @neutral_red;
 }
 
 #tray menu {
@@ -199,36 +238,21 @@ label:focus {
 }
 
 /* Value-based coloring via module states */
-#temperature.warning {
-    color: #d79921;
-}
-
-#temperature.critical {
-    color: #fb4934;
-}
-
 #cpu.warning,
-#memory.warning {
-    color: #d79921;
+#memory.warning,
+#temperature.warning,
+#network.wifi-mid {
+    color: @neutral_yellow;
 }
 
 #cpu.critical,
-#memory.critical {
-    color: #fb4934;
-}
-
-#network.ethernet {
-    color: #b8bb26;
-}
-
+#memory.critical,
+#temperature.critical,
 #network.wifi-weak {
-    color: #fb4934;
+    color: @neutral_red;
 }
 
-#network.wifi-mid {
-    color: #d79921;
-}
-
+#network.ethernet,
 #network.wifi-strong {
-    color: #b8bb26;
+    color: @neutral_green;
 }
