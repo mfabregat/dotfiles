@@ -13,3 +13,11 @@ include config.d/*
 exec_always sh -c 'pkill -x waybar 2>/dev/null; /home/marc/.config/waybar/audio_menu.sh; exec waybar'
 exec_always autotiling
 exec_always sh -c 'pkill -x gammastep 2>/dev/null; exec gammastep'
+
+
+# # Export Sway environment to systemd & D-Bus
+# exec systemctl --user import-environment DISPLAY WAYLAND_DISPLAY SWAYSOCK XDG_CURRENT_DESKTOP
+# exec dbus-update-activation-environment --systemd DISPLAY WAYLAND_DISPLAY SWAYSOCK XDG_CURRENT_DESKTOP=sway
+
+# Start GNOME Keyring daemon components
+exec eval $(/usr/bin/gnome-keyring-daemon --start --components=secrets,pkcs11,ssh)
