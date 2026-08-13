@@ -13,7 +13,7 @@ Rectangle {
     readonly property var activeNet: findActive(Networking.devices.values, wifi ? wifi.networks.values : [])
 
     width: Theme.widgetWidth
-    height: Theme.unit * 9
+    height: 27
     radius: 7
     color: area.containsMouse ? Theme.bgHover : "transparent"
 

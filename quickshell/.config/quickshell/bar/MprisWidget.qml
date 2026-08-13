@@ -35,7 +35,7 @@ Rectangle {
     readonly property real titleNatural: Math.min(titleText.implicitWidth, maxTitleLen)
     readonly property real artistNatural: Math.min(artistText.implicitWidth, maxArtistLen)
     readonly property real availableLen: Math.max(0, root.freeSpace
-        - 2 * Theme.widgetMargin - iconText.implicitHeight - Theme.spacing - Theme.widgetMargin)
+        - 4 - iconText.implicitHeight - 3 - 2)
 
     readonly property real titleLen: root.titleNatural + root.artistNatural <= root.availableLen
         ? root.titleNatural
@@ -48,8 +48,8 @@ Rectangle {
 
     width: Theme.widgetWidth
     // Sized by the layout to exactly this (no fill, no loop)
-    implicitHeight: 2 * Theme.widgetMargin + iconText.implicitHeight + Theme.spacing
-        + root.titleLen + Theme.widgetMargin + root.artistLen
+    implicitHeight: 4 + iconText.implicitHeight + 3
+        + root.titleLen + 2 + root.artistLen
     visible: hasPlayer
     radius: 7
     color: playing ? Theme.accent
@@ -70,8 +70,8 @@ Rectangle {
 
     ColumnLayout {
         anchors.fill: parent
-        anchors.margins: Theme.widgetMargin
-        spacing: Theme.spacing
+        anchors.margins: 2
+        spacing: 3
 
         Text {
             id: iconText
@@ -96,7 +96,7 @@ Rectangle {
                 transformOrigin: Item.TopLeft // rotate around the origin, not the center
                 width: root.titleLen
                 height: Theme.titleStrip
-                x: Math.round((Theme.widgetWidth - 2 * Theme.widgetMargin + Theme.titleStrip) / 2)
+                x: 16 // visual strip centered (titleStrip 13 in a 22px widget)
                 y: 0
                 elide: Text.ElideRight
                 text: root.player ? root.player.trackTitle || "" : ""
@@ -112,8 +112,8 @@ Rectangle {
                 transformOrigin: Item.TopLeft // rotate around the origin, not the center
                 width: root.artistLen
                 height: Theme.artistStrip
-                x: Math.round((Theme.widgetWidth - 2 * Theme.widgetMargin + Theme.artistStrip) / 2)
-                y: root.titleLen + 3 // follows the title length
+                x: 15 // visual strip centered (artistStrip 11)
+                y: root.titleLen + 2 // follows the title length
                 elide: Text.ElideRight
                 text: root.player ? root.player.trackArtist || "" : ""
                 color: root.playing ? Theme.bg : Theme.fgDim

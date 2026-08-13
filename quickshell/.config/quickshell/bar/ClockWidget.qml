@@ -10,7 +10,7 @@ Rectangle {
     required property var calendar
 
     width: Theme.widgetWidth
-    height: Theme.unit * 10
+    height: 30
     radius: 7
     color: area.containsMouse ? Theme.bgHover : "transparent"
 

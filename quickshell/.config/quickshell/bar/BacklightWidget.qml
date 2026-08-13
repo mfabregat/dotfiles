@@ -12,7 +12,7 @@ Rectangle {
     readonly property int percent: Brightness.percent
 
     width: Theme.widgetWidth
-    height: Theme.unit * 9
+    height: 27
     radius: 7
     color: area.containsMouse ? Theme.bgHover : "transparent"
     visible: Brightness.available

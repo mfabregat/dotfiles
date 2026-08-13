@@ -47,37 +47,31 @@ Singleton {
     readonly property color urgent: brightRed
     readonly property color warn: brightYellow
 
-    // ── Design tokens ──
+    // ── Design tokens (plain numbers — tweak freely) ──────────────────
     readonly property string fontFamily: "Noto Sans Nerd Font Propo"
     readonly property string fontMono: "JetBrainsMono Nerd Font Propo"
-    readonly property int barWidth: 44
+    readonly property int barWidth: 32
 
-    // ── Bar-relative scale ──────────────────────────────────────────────
-    // Every measurement derives from barWidth via `scale`; tune the
-    // fraction to resize the whole shell (0.09 at barWidth 44 -> unit 4).
-    readonly property real scale: 0.09
-    readonly property int unit: Math.max(3, Math.round(barWidth * scale))
+    readonly property int spacing: 3
+    readonly property int padding: 5
+    readonly property int radius: 6
+    readonly property int innerMargin: 3                            // bar window content margin
+    readonly property int widgetMargin: 2                           // widget-internal margin
+    readonly property int widgetWidth: 22                           // bar widget width
+    readonly property int pillWidth: 21                             // workspaces/taskbar/tray pills
+    readonly property int pillHeight: 18
+    readonly property int popupRowHeight: 24                        // popup menu rows
+    readonly property int calendarCell: 23                          // calendar day cell
 
-    readonly property int spacing: unit                                   // 4
-    readonly property int padding: Math.round(unit * 1.5)                 // 6
-    readonly property int radius: unit * 2                                // 8
-    readonly property int innerMargin: unit                               // 4  bar window content margin
-    readonly property int widgetMargin: Math.round(unit * 0.75)           // 3  widget-internal margin
-    readonly property int widgetWidth: barWidth - 2 * innerMargin - 2 * widgetMargin // 30
-    readonly property int pillWidth: unit * 7                             // 28 workspaces/taskbar/tray
-    readonly property int pillHeight: unit * 6                            // 24
-    readonly property int popupRowHeight: unit * 8                        // 32 popup menu rows
-    readonly property int calendarCell: Math.round(unit * 7.5)            // 30
-
-    readonly property int iconSize: unit * 4                              // 16
-    readonly property int iconSizeLarge: Math.round(unit * 4.5)           // 18
-    readonly property int fontSizeTiny: unit * 2                          // 8
-    readonly property int fontSizeSmall: Math.round(unit * 2.5)           // 10
-    readonly property int fontSize: Math.round(unit * 3)                  // 12
-    readonly property int fontSizeLarge: Math.round(unit * 3.5)           // 14
-    readonly property int textSize: Math.round(unit * 3.25)               // 13
+    readonly property int iconSize: 12
+    readonly property int iconSizeLarge: 14
+    readonly property int fontSizeTiny: 6
+    readonly property int fontSizeSmall: 8
+    readonly property int fontSize: 9
+    readonly property int fontSizeLarge: 11
+    readonly property int textSize: 10
 
     // Mpris rotated strips: visual width of the text lines
-    readonly property int titleStrip: Math.round(unit * 4.25)             // 17
-    readonly property int artistStrip: Math.round(unit * 3.5)             // 14
+    readonly property int titleStrip: 13
+    readonly property int artistStrip: 11
 }

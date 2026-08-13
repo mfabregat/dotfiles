@@ -48,7 +48,7 @@ Scope {
             // ── Bar content ─────────────────────────────────────────────
             ColumnLayout {
                 anchors.fill: parent
-                anchors.margins: Theme.innerMargin
+                anchors.margins: 3
                 spacing: Theme.spacing
 
                     // Top: desks + now playing
@@ -85,7 +85,7 @@ Scope {
                     // mpris freeSpace can use its total height)
                     Column {
                         id: bottomGroup
-                        width: Theme.widgetWidth
+                        width: 22
                         spacing: Theme.spacing
                         Layout.alignment: Qt.AlignHCenter
 

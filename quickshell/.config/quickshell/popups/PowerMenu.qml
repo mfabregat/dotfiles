@@ -67,7 +67,7 @@ AnchoredPopup {
         signal triggered
 
         width: parent.width
-        height: Math.round(Theme.unit * 8.5)
+        height: 26
         radius: 6
         color: rowArea.containsMouse ? Theme.bgHover : "transparent"
 

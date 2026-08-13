@@ -17,7 +17,7 @@ Rectangle {
     readonly property bool muted: node && node.audio ? node.audio.muted : false
 
     width: Theme.widgetWidth
-    height: Theme.unit * 10
+    height: 30
     radius: 7
     color: area.containsMouse ? Theme.bgHover : "transparent"
 

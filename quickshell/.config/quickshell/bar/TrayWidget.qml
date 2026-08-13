@@ -15,8 +15,8 @@ Item {
 
     width: Theme.widgetWidth
     // Layouts honor Layout.preferredHeight (bound `height` gets overridden)
-    Layout.preferredHeight: shown * (Theme.pillWidth + 2)
-    height: shown * (Theme.pillWidth + 2)
+    Layout.preferredHeight: shown * 23
+    height: shown * 23
     clip: true // overflow (5+ items) is hidden, never overlaps the clock
 
     Column {

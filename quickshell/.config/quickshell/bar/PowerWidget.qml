@@ -8,7 +8,7 @@ Rectangle {
     required property var powerMenu
 
     width: Theme.widgetWidth
-    height: Math.round(Theme.unit * 7.5)
+    height: 23
     radius: 7
     color: area.containsMouse ? Theme.bgHover : "transparent"
 

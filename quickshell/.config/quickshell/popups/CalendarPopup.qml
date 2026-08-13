@@ -111,8 +111,8 @@ AnchoredPopup {
         property string text: ""
         signal clicked
 
-        width: Math.round(Theme.unit * 5.5)
-        height: Theme.unit * 5
+        width: 17
+        height: 15
         radius: 5
         color: btnArea.containsMouse ? Theme.bgHover : "transparent"
 

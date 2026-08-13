@@ -15,7 +15,7 @@ Rectangle {
     readonly property bool discharging: battery && battery.state === UPowerDeviceState.Discharging
 
     width: Theme.widgetWidth
-    height: Theme.unit * 9
+    height: 27
     radius: 7
     color: area.containsMouse ? Theme.bgHover : "transparent"
     // Hide phantom batteries (desktops: DisplayDevice reports 0%, not on battery)

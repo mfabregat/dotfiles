@@ -9,7 +9,7 @@ Rectangle {
     id: root
 
     width: Theme.widgetWidth
-    height: Math.round(Theme.unit * 5.5)
+    height: 17
     radius: 7
     color: area.containsMouse ? Theme.bgHover : "transparent"
     visible: KeyboardLayout.available
