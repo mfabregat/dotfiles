@@ -35,33 +35,19 @@ PanelWindow {
     // keystroke and once the (async) desktop entry scan completes.
     property var results: buildResults(searchInput.text, DesktopEntries.applications.values)
 
-    /// Currently selected entry (object identity — delegates get no `index`
-    /// in this quickshell/Qt combo, so selection is tracked by object).
-    property var selectedEntry: null
-
     function launchSelected(): void {
-        if (!root.selectedEntry) return;
-        root.selectedEntry.execute();
+        const hit = root.results[resultsList.currentIndex];
+        if (!hit) return;
+        hit.entry.execute();
         LauncherState.open = false;
     }
 
     /// Move the selection by `delta` rows (clamped). The results ListView
-    /// follows via the currentIndex binding + highlightFollowsCurrentItem.
+    /// follows via highlightFollowsCurrentItem.
     function moveSelection(delta: int): void {
         if (root.results.length === 0) return;
-        let pos = root.selectedIndex(root.results, root.selectedEntry);
-        if (pos < 0) pos = 0;
-        pos = Math.max(0, Math.min(pos + delta, root.results.length - 1));
-        root.selectedEntry = root.results[pos].entry;
-    }
-
-    /// Position of `entry` in `results`, or -1. Both args are tracked
-    /// properties — landmine 2: a bare function call in a binding would
-    /// evaluate once, so the tracked args keep it reactive.
-    function selectedIndex(results: var, entry: var): int {
-        for (let i = 0; i < results.length; i++)
-            if (results[i].entry === entry) return i;
-        return -1;
+        resultsList.currentIndex = Math.max(0,
+            Math.min(resultsList.currentIndex + delta, root.results.length - 1));
     }
 
     // Fresh open: clear the previous query, select the top result, and grab
@@ -69,14 +55,14 @@ PanelWindow {
     onVisibleChanged: {
         if (root.visible) {
             searchInput.text = "";
-            root.selectedEntry = root.results.length ? root.results[0].entry : null;
+            resultsList.currentIndex = 0;
             Qt.callLater(() => searchInput.forceActiveFocus());
         }
     }
 
     // Results rebuilt (every keystroke): selection returns to the top.
     onResultsChanged: {
-        root.selectedEntry = root.results.length ? root.results[0].entry : null;
+        resultsList.currentIndex = 0;
     }
 
     // ── Backdrop + centered card ──────────────────────────────
@@ -152,23 +138,22 @@ PanelWindow {
 
         // Results — at most 8 rows visible; the card shrinks with fewer.
         // Native ListView: lazily instantiates rows, wheel-scrolls, and
-        // follows the selection (currentIndex binding + highlight). Delegate
-        // `index` is unavailable in this quickshell/Qt combo, so highlight
-        // and hover work by entry object identity instead.
+        // follows the selection (highlightFollowsCurrentItem).
+        // NOTE: no `required property var modelData` here — declaring it
+        // kills the `index` context property in this quickshell/Qt combo
+        // (verified 2026-08-13); implicit modelData + index work fine.
         ListView {
             id: resultsList
             width: parent.width
             height: Math.min(root.results.length, 8) * Theme.popupRowHeight
             model: root.results
-            currentIndex: root.selectedIndex(root.results, root.selectedEntry)
             clip: true
             highlightFollowsCurrentItem: true
             boundsBehavior: Flickable.StopAtBounds
 
             delegate: Rectangle {
-                required property var modelData
                 readonly property var entry: modelData.entry
-                readonly property bool selected: entry === root.selectedEntry
+                readonly property bool selected: ListView.isCurrentItem
 
                 width: resultsList.width
                 height: Theme.popupRowHeight
@@ -218,9 +203,9 @@ PanelWindow {
                 MouseArea {
                     anchors.fill: parent
                     hoverEnabled: true
-                    onEntered: root.selectedEntry = entry
+                    onEntered: resultsList.currentIndex = index
                     onClicked: {
-                        root.selectedEntry = entry;
+                        resultsList.currentIndex = index;
                         root.launchSelected();
                     }
                 }

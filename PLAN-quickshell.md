@@ -153,10 +153,14 @@ Key mechanics:
 - **Quirk 1 — exclusive zones**: while waybar was still running, the
   quickshell bar rendered *left of* waybar (waybar owns the right-edge
   exclusive zone). Not a bug; gone with waybar.
-- **Quirk 2 — reload flakiness**: structural changes to the scene root
-  across hot reloads sometimes fail to map windows (0.3.0 behavior);
-  property-level changes reload fine. Workflow: restart quickshell after
-  structural edits (`pkill -x quickshell`), hot-reload for styling.
+- **Quirk 2 — hot reload state can go stale** (audited 2026-08-13): a
+  purely structural edit (adding a window) reloads and maps fine in
+  isolation (verified), and property-level edits reload fine. But after a
+  mid-session hot reload of the launcher internals, the live session's
+  window/grab state went inconsistent (focus didn't restore on close) —
+  a fresh start fixed it. Workflow: prefer a restart (`pkill -x
+  quickshell` + `swaymsg reload`) after significant edits; hot reload is
+  fine for styling.
 - **Pattern that works**: file-root PanelWindow or Variants delegates on
   `Quickshell.screens` map on fresh launch. Bars/popups will all follow
   the Variants-per-screen pattern.
@@ -172,9 +176,13 @@ Landmines found and worked around (all documented in code comments):
 
 1. **ObjectModel has `.values`, not `.length`** — all model iteration uses
    `.values` (reactive).
-2. **Function calls in QML bindings are never tracked** — `property var x:
-   lookup()` evaluates once. Fix: pass a tracked property as an argument
-   (`lookup(SomeModel.values)`).
+2. **Native (C++) method calls don't track their internals in bindings** —
+   a QML *JS* function call *is* tracked (verified 2026-08-13: a bare
+   `lookup()` reading a property re-evaluates on change). What is *not*
+   tracked is a native method's internal reads — e.g. `I3.monitorFor(s)`
+   in a binding evaluates once, so it's guarded by a tracked
+   `I3.monitors.values.length ?` ternary. The old "pass every model as an
+   argument" rule was over-broad but harmless where used.
 3. **sway `get_workspaces` has no node trees** — the taskbar originally
    parsed `swaymsg -t get_tree` for windows; that was later replaced by
    the native `ToplevelManager` (wlr-foreign-toplevel, see Taskbar.qml —
@@ -207,8 +215,9 @@ Landmines found and worked around (all documented in code comments):
    creation races are real (nondeterministic mapping); eager creation
    sidesteps them. PanelWindows resize reactively from
    implicitWidth/implicitHeight.
-8. Inline components can't see property aliases or root props — use
-   `parent.width` or plain properties.
+8. ~~Inline components can't see root props~~ — **FALSE** (audited
+   2026-08-13): inline components can reference file-root ids; PowerMenu's
+   rows already do (`root.armedAction`).
 
 Remaining: exit-confirm uses the power menu (swaynag removed). Note: the
 audio menu now lists hardware sinks from Pipewire (old audio_menu.sh is
@@ -234,12 +243,14 @@ Esc / click-outside closes. Rofi retired.
   WlrKeyboardFocus.Exclusive` (import `Quickshell.Wayland._WlrLayerShell`).
   Grab is active while the surface is mapped; focus returns to the session
   on close (verified via `swaymsg -t get_tree` focused-node cycling).
-- **New landmine 9 — delegates get no `index`** (neither ListView nor
-  Repeater, quickshell 0.3.0 + Qt 6.11): `ReferenceError: index is not
-  defined`. Every existing widget only ever uses `modelData` — selection is
-  tracked by object identity (`entry === root.selectedEntry`). The results
-  list is a Repeater + Column over a `visibleResults` slice (scrollOffset
-  window), scrolling via a 8-row window with Up/Down.
+- **Landmine 9 root-caused — `required property var modelData` kills
+  `index`** (verified 2026-08-13): with the `required` declaration,
+  `index` is `ReferenceError` in delegates (ListView *and* Repeater);
+  with implicit `modelData` (no `required`), `index` works fine.
+  Refactored the launcher to use native `index` + `ListView.isCurrentItem`
+  + plain `currentIndex`, dropping the entry-object-identity selection
+  machinery. (The old note below — Repeater/Column slice windowing — was
+  superseded by the native ListView from the efficiency review.)
 - **Fuzzy scorer**: per-token subsequence over name/generic/keywords/
   categories/exec; scores consecutive runs and word starts, bonus for
   name-prefix; `noDisplay` entries excluded; sort by score then name.
@@ -280,3 +291,24 @@ in place:
   taskbar uses the native ToplevelManager (not get_tree parsing), and
   AnchoredPopup is a PopupWindow (not the old LayerPopup/PopupBackdrop).
   Corrected entries 3, 5, 6, 7 accordingly.
+
+### Assumption audit — all phases (2026-08-13)
+
+Every tagged assumption was re-verified with throwaway configs on live
+sway 1.12 (separate `quickshell -p` instances, logs + `swaymsg` focus
+signals):
+
+| # | Claim | Verdict | Evidence |
+|---|---|---|---|
+| P2-1 | ObjectModel has `.values`, not `.length` | **true** | qmltypes: `values` (notify `valuesChanged`), no length/count |
+| P2-2 | Function calls in bindings never tracked | **false** | bare QML function reads tracked (n=1..6 re-eval); only native method internals aren't — the `I3.monitorFor` guard is still needed |
+| P2-8 | Inline components can't see root props | **false** | inline comp read `root.n` fine (PowerMenu already did) |
+| P3-9 | Delegates get no `index` | **root-caused** | `required property var modelData` kills `index`; implicit `modelData` + `index` works. Launcher refactored to native index/isCurrentItem |
+| P1-q2 | Structural hot reload fails to map | **false in isolation** | added a PanelWindow via file edit → mapped + grabbed, 0 errors. But a live-session reload left grab state stale once — restart after significant edits is still prudent |
+| P1 | MultiEffect avoids qt5compat | moot | MultiEffect unused; qt6-5compat/imageformats not installed, not needed |
+| P1 | sway ≥1.8 (ext-session-lock) | **true** | sway 1.12 |
+
+No other phase-2/3 assumptions were found questionable (popup anchoring,
+DesktopEntries async scan, `.values` reactivity, polling services with no
+native alternative — `Quickshell.Io` has no file-watch type in 0.3.0;
+FileView is HEAD-only).
