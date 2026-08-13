@@ -27,7 +27,7 @@ Scope {
             }
 
             implicitWidth: Theme.barWidth
-            color: "transparent"
+            color: Theme.bg // flush edge-to-edge bar (no gaps, no radius)
 
             // ── Popups (anchored to their trigger widget) ───────────────
             CalendarPopup {
@@ -45,19 +45,11 @@ Scope {
                 anchorWindow: barWindow
             }
 
-            // ── Bar background ──────────────────────────────────────────
-            Rectangle {
-                id: barSurface
-
+            // ── Bar content ─────────────────────────────────────────────
+            ColumnLayout {
                 anchors.fill: parent
-                anchors.margins: Theme.spacing
-                radius: Theme.radius
-                color: Theme.bg
-
-                ColumnLayout {
-                    anchors.fill: parent
-                    anchors.margins: 4
-                    spacing: Theme.spacing
+                anchors.margins: 4
+                spacing: Theme.spacing
 
                     // Top: desks + now playing
                     Workspaces {
@@ -122,7 +114,6 @@ Scope {
                         PowerWidget {
                             powerMenu: powerMenu
                         }
-                    }
                 }
             }
         }
