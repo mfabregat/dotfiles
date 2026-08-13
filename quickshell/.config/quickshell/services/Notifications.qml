@@ -63,7 +63,6 @@ Singleton {
 
     readonly property int historyLimit: 50
     readonly property int popupLimit: 3
-    readonly property int tickMs: 250
     // Popup auto-dismiss timeouts per urgency. Critical stays until closed
     // (timeout 0); an app-specified expire_timeout overrides these.
     readonly property int timeoutLow: 5000
@@ -71,32 +70,69 @@ Singleton {
     readonly property int timeoutCritical: 0
 
     // ── Popup timeout driver ───────────────────────────────────────────
-    // Runs only while popups exist; each tick accumulates elapsed time on
-    // the popup wrappers (paused ones are skipped while hovered).
+    // Event-driven: one one-shot timer armed to the soonest popup deadline.
+    // It fires only when a popup should end (then re-arms), so nothing
+    // wakes up while popups sit idle — and persistent popups (timeout 0:
+    // critical/resident) never arm it at all. (The earlier 250ms polling
+    // ticker woke 4×/sec for the whole time any popup — including a
+    // persistent one — was on screen.)
     Timer {
-        id: ticker
-        interval: root.tickMs
-        repeat: true
-        running: root.popups.length > 0
-        onTriggered: {
-            for (const w of root.popups) {
-                if (w.paused || w.timeoutMs <= 0) continue;
-                w.elapsed += root.tickMs;
-                if (w.elapsed >= w.timeoutMs) root.endPopup(w);
-            }
+        id: driver
+        repeat: false
+        onTriggered: root.fireDeadlines()
+    }
+
+    /// Re-arm the driver to the soonest deadline (idempotent; call after
+    /// every popup-state change).
+    function armDriver(): void {
+        let next = Infinity;
+        for (const w of root.popups) {
+            if (w.paused || w.timeoutMs <= 0) continue;
+            if (w.deadline < next) next = w.deadline;
         }
+        if (next === Infinity) {
+            driver.stop();
+            return;
+        }
+        driver.interval = Math.max(0, next - Date.now());
+        driver.start();
+    }
+
+    /// End every popup whose deadline has passed, then re-arm.
+    function fireDeadlines(): void {
+        const now = Date.now();
+        for (const w of root.popups.slice()) {
+            if (w.paused || w.timeoutMs <= 0) continue;
+            if (w.deadline <= now) root.endPopup(w);
+        }
+        root.armDriver();
+    }
+
+    /// Pause/resume `w`'s dismissal deadline (hover pauses a popup).
+    function setPaused(w: var, paused: bool): void {
+        if (!w || w.paused === paused) return;
+        if (paused) {
+            w.remaining = Math.max(0, w.deadline - Date.now());
+            w.paused = true;
+        } else {
+            w.deadline = Date.now() + w.remaining;
+            w.paused = false;
+        }
+        root.armDriver();
     }
 
     // ── Ingress ────────────────────────────────────────────────────────
     function addNotification(notif: var): void {
         notif.tracked = true;
 
+        const timeoutMs = root.timeoutFor(notif);
         const wrap = {
             notification: notif,
             screen: root.focusedScreen(),
-            timeoutMs: root.timeoutFor(notif),
-            elapsed: 0,
+            timeoutMs: timeoutMs,
+            deadline: Date.now() + timeoutMs,
             paused: false,
+            remaining: 0,
             transient: notif.transient,
             time: Date.now(),
         };
@@ -118,6 +154,7 @@ Singleton {
                 root.popups.pop(); // oldest leaves the window, stays in history
             }
             root.unread += 1;
+            root.armDriver();
         }
 
         // Server closes the Notification object after `closed` — drop it.
@@ -154,6 +191,7 @@ Singleton {
     function endPopup(w: var): void {
         if (!root.popups.includes(w)) return;
         root.popups = root.popups.filter(x => x !== w);
+        root.armDriver();
         if (w.transient && w.notification) w.notification.dismiss();
     }
 
@@ -172,6 +210,7 @@ Singleton {
         }
         if (root.popups.includes(w)) {
             root.popups = root.popups.filter(x => x !== w);
+            root.armDriver();
         }
         root.unread = Math.max(0, root.unread - 1);
         if (w.notification) w.notification = null; // server deleted the object

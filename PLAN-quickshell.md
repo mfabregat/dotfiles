@@ -393,7 +393,12 @@ complete copy — the qslog mirror can drop lines.)
 
 - Dropped the unused `newNotification` signal and the redundant `popup`
   flag on wrappers (popup membership IS the `popups` array).
-- Ticker now runs only while popups exist (`running: popups.length > 0`).
+- Popup timeouts are now event-driven: one one-shot timer armed to the
+  soonest popup deadline (re-arms after each popup-state change). No
+  periodic wakeups — a persistent critical/resident popup (timeout 0)
+  never arms the timer at all, and hover-pause just removes a popup from
+  the schedule (remaining stored, deadline rebuilt on resume). Replaced
+  the 250ms polling ticker.
 - `transient` read from the native Notification property instead of the
   `hints` map; `timeoutFor` now honors the native `resident` property
   (resident notifications never auto-dismiss their popup).
@@ -405,7 +410,7 @@ complete copy — the qslog mirror can drop lines.)
 - Action buttons capped at 140px wide; stale comments fixed; center
   height properties moved to the top.
 - Re-verified live: full sweep clean (0 errors), DND suppress+store,
-  clear, timeouts.
+  clear, timeouts; user-confirmed hover-pause with the new driver.
 
 ## Landmine audit (2026-08-13)
 

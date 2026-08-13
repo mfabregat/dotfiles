@@ -48,7 +48,9 @@ Rectangle {
         anchors.fill: parent
         hoverEnabled: true
         onHoveredChanged: {
-            if (root.pausable && root.wrapper) root.wrapper.paused = hovered;
+            if (root.pausable && root.wrapper) {
+                Notifications.setPaused(root.wrapper, hovered);
+            }
         }
         onClicked: {
             if (root.clickable) Notifications.openCenter();
@@ -141,10 +143,7 @@ Rectangle {
                     id: closeArea
                     anchors.fill: parent
                     hoverEnabled: true
-                    onClicked: {
-                        if (root.wrapper) root.wrapper.paused = false;
-                        Notifications.discard(root.wrapper);
-                    }
+                    onClicked: Notifications.discard(root.wrapper);
                 }
             }
         }
@@ -206,7 +205,6 @@ Rectangle {
                         anchors.fill: parent
                         hoverEnabled: true
                         onClicked: {
-                            if (root.wrapper) root.wrapper.paused = false;
                             modelData.invoke(); // closes unless resident
                         }
                     }
