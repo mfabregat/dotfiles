@@ -18,7 +18,7 @@ ShellRoot {
         Launcher {}
     }
 
-    // Notification popups: one small top-right window per screen, showing
+    // Notification popups: one small bottom-right window per screen, showing
     // the popups routed to that screen (see popups/NotificationPopup.qml).
     Variants {
         model: Quickshell.screens
