@@ -53,7 +53,7 @@ Singleton {
 
     // ── Bar ───────────────────────────────────────────────────────────
     readonly property int barWidth: 32   // width of the bar window on screen
-    readonly property int spacing: 3     // gap between bar widgets / popup rows
+    readonly property int spacing: 4     // gap between bar widgets / popup rows
     readonly property int widgetWidth: 22 // width of every bar widget
 
     // ── Popups (calendar, audio menu, power menu) ─────────────────────
@@ -67,7 +67,7 @@ Singleton {
     readonly property int pillHeight: 18
 
     // ── Typography & icons ────────────────────────────────────────────
-    readonly property int iconSize: 12    // taskbar/tray app icons
+    readonly property int iconSize: 16    // taskbar/tray app icons
     readonly property int fontSizeTiny: 6   // small labels (percentages, artist)
     readonly property int fontSizeSmall: 8  // pill numbers, weekday headers
     readonly property int fontSize: 9       // general text (track title, menus)

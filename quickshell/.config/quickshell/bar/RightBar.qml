@@ -45,6 +45,11 @@ Scope {
                 anchorWindow: barWindow
             }
 
+            CpuMemPopup {
+                id: cpuMemPopup
+                anchorWindow: barWindow
+            }
+
             // ── Bar content ─────────────────────────────────────────────
             ColumnLayout {
                 anchors.fill: parent
@@ -89,7 +94,9 @@ Scope {
                         spacing: Theme.spacing
                         Layout.alignment: Qt.AlignHCenter
 
-                        CpuMemWidget {}
+                        CpuMemWidget {
+                            detailsPopup: cpuMemPopup
+                        }
 
                         VolumeWidget {
                             audioMenu: audioMenu
@@ -98,8 +105,6 @@ Scope {
                         BacklightWidget {}
 
                         NetworkWidget {}
-
-                        LayoutWidget {}
 
                         TrayWidget {
                             barWindow: barWindow

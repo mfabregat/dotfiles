@@ -35,10 +35,14 @@ PopupWindow {
         gravity: Edges.Left
     }
 
+    /// Whether the popup grabs input (clicking outside closes it).
+    /// Hover-driven popups set this to false.
+    property bool grabOnOpen: true
+
     // Native dismissal: xdg_popup grab — clicking outside closes the popup.
     // (Only takes effect when the parent bar window has received input,
     // which is the case for real clicks.)
-    grabFocus: true
+    grabFocus: root.grabOnOpen
 
     // Reactive anchor rect: re-evaluates when the popup height settles.
     anchor.rect.x: root.anchorItem ? root.itemX : 0

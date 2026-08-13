@@ -1,74 +1,90 @@
-// bar/CpuMemWidget.qml — CPU / memory / temperature status icons.
-// Colors shift by state (warn -> yellow, critical -> red) like the old bar.
-// Temperature thresholds match the old waybar (60/80: hwmon1 is the GPU).
+// bar/CpuMemWidget.qml — CPU / memory / temperature status glyphs.
+// No numbers: colors alone flag the state (warn -> yellow, critical -> red).
+// Hover (200ms) or click opens the details popup.
 import QtQuick
-import QtQuick.Layouts
 import qs
 import qs.services
 
-ColumnLayout {
+Item {
     id: root
 
-    readonly property real cpu: CpuMemTemp.cpu
-    readonly property real mem: CpuMemTemp.mem
-    readonly property real temp: CpuMemTemp.temp
+    required property var detailsPopup
 
     width: Theme.widgetWidth
-    spacing: 2
+    implicitHeight: glyphCol.implicitHeight
     visible: CpuMemTemp.available
 
-    function cpuMemColor(value: real): color {
+    function colorFor(value: real): color {
         if (value >= 90) return Theme.urgent;
         if (value >= 70) return Theme.warn;
         return Theme.fgDim;
     }
 
-    function tempColor(value: real): color {
+    function tempColorFor(value: real): color {
         if (value >= 80) return Theme.urgent;
         if (value >= 60) return Theme.warn;
         return Theme.fgDim;
     }
 
-    StatusIcon {
-        glyph: ""
-        value: cpu
-        color: cpuMemColor(cpu)
-    }
-    StatusIcon {
-        glyph: ""
-        value: mem
-        color: cpuMemColor(mem)
-    }
-    StatusIcon {
-        glyph: ""
-        value: temp
-        color: tempColor(temp)
-    }
+    Column {
+        id: glyphCol
+        anchors.fill: parent
+        spacing: 3
 
-    component StatusIcon: Column {
-        id: item
-
-        property string glyph: ""
-        property real value: 0
-        property color color: Theme.fgDim
-
-        width: Theme.widgetWidth
-        spacing: 0
-
-        Text {
-            anchors.horizontalCenter: parent.horizontalCenter
-            text: item.glyph
-            color: item.color
-            font.family: Theme.fontFamily
-            font.pixelSize: Theme.fontSizeLarge
+        StatusGlyph {
+            glyph: ""
+            color: root.colorFor(CpuMemTemp.cpu)
         }
+        StatusGlyph {
+            glyph: ""
+            color: root.colorFor(CpuMemTemp.mem)
+        }
+        StatusGlyph {
+            glyph: ""
+            color: root.tempColorFor(CpuMemTemp.temp)
+        }
+    }
 
-        Text {
-            anchors.horizontalCenter: parent.horizontalCenter
-            text: Math.round(item.value) + "%"
-            color: Theme.fgDim
-            font.family: Theme.fontFamily
-            font.pixelSize: Theme.fontSizeTiny
+    component StatusGlyph: Text {
+        property string glyph: ""
+
+        width: parent.width
+        horizontalAlignment: Text.AlignHCenter
+        text: glyph
+        font.family: Theme.fontFamily
+        font.pixelSize: Theme.fontSizeLarge
+    }
+
+    MouseArea {
+        id: area
+        anchors.fill: parent
+        hoverEnabled: true
+
+        onClicked: {
+            if (root.detailsPopup.visible) root.detailsPopup.hide();
+            else root.detailsPopup.showAt(root);
+        }
+        onEntered: openTimer.start()
+        onExited: closeTimer.start()
+    }
+
+    // Grace timers: quick passes don't pop; moving into the popup (across
+    // the gap) doesn't close it.
+    Timer {
+        id: openTimer
+        interval: 200
+        repeat: false
+        onTriggered: {
+            if (area.containsMouse && !root.detailsPopup.visible)
+                root.detailsPopup.showAt(root);
+        }
+    }
+    Timer {
+        id: closeTimer
+        interval: 250
+        repeat: false
+        onTriggered: {
+            if (!root.detailsPopup.hovered) root.detailsPopup.hide();
         }
     }
 }
