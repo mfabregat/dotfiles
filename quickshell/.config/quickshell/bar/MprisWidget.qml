@@ -29,9 +29,10 @@ Rectangle {
     // free space, shrink the title first (down to minTitleLen), then the
     // artist. All bindings are acyclic: freeSpace comes from the layout's
     // fixed siblings, never from this widget's own size.
-    readonly property int maxTitleLen: 140
+    readonly property int maxTitleLen: 180
     readonly property int minTitleLen: 60
-    readonly property int maxArtistLen: 80
+    readonly property int maxArtistLen: 180
+    readonly property int minArtistLen: 60
     readonly property real titleNatural: Math.min(titleText.implicitWidth, maxTitleLen)
     readonly property real artistNatural: Math.min(artistText.implicitWidth, maxArtistLen)
     readonly property real availableLen: Math.max(0, root.freeSpace
@@ -44,7 +45,13 @@ Rectangle {
                    root.availableLen)
     readonly property real artistLen: root.titleNatural + root.artistNatural <= root.availableLen
         ? root.artistNatural
-        : Math.max(0, Math.min(root.artistNatural, root.availableLen - root.titleLen))
+        : // shrink the artist after the title, down to minArtistLen;
+          // on extreme pressure (minTitle+minArtist > space) the artist
+          // yields its floor so the widget never overflows
+          Math.min(
+              Math.max(root.minArtistLen,
+                       Math.min(root.artistNatural, root.availableLen - root.titleLen)),
+              Math.max(0, root.availableLen - root.titleLen))
 
     width: Theme.widgetWidth
     // Sized by the layout to exactly this (no fill, no loop)
@@ -124,16 +131,10 @@ Rectangle {
                 font.bold: true
             }
 
-            // Small dash separator between title and artist
-            // Small dash separator between title and artist (rotated with
-            // the strips). Glyph-sized box (a "-" is roughly square) and
-            // center-origin rotation: placing the box center in the gap
-            // middle centers the visible dash — y = titleLen + 2.
             Text {
                 id: dashText
                 rotation: 90
                 text: "-"
-                height: implicitWidth
                 color: root.playing ? Theme.bg : Theme.fg
                 font.family: Theme.fontFamily
                 font.pixelSize: Theme.fontSize
