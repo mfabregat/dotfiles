@@ -1,6 +1,7 @@
 // bar/MprisWidget.qml — now playing (spotify preferred).
 // Left click: play/pause · right click: next · middle click: open player.
-// While playing the whole widget turns accent-colored (text flips to bg).
+// Title + artist read top-to-bottom; while playing the whole widget turns
+// accent-colored (text flips to bg).
 import Quickshell
 import Quickshell.Services.Mpris
 import QtQuick
@@ -17,7 +18,7 @@ Rectangle {
     readonly property bool playing: player !== null && player.isPlaying
 
     width: 30
-    height: hasPlayer ? 150 : 0
+    height: 62
     visible: hasPlayer
     radius: 7
     color: playing ? Theme.accent
@@ -39,7 +40,7 @@ Rectangle {
     ColumnLayout {
         anchors.fill: parent
         anchors.margins: 3
-        spacing: 4
+        spacing: 3
 
         Text {
             Layout.alignment: Qt.AlignHCenter
@@ -50,34 +51,35 @@ Rectangle {
             Behavior on color { ColorAnimation { duration: 150 } }
         }
 
-        // Rotated track title (reads bottom-to-top, like the old bar)
-        Item {
-            Layout.fillHeight: true
-            Layout.fillWidth: true
+        // Title + artist, rotated so they read top-to-bottom.
+        // A RowLayout of rotated texts becomes a vertical stack on screen.
+        RowLayout {
+            Layout.alignment: Qt.AlignHCenter
+            spacing: 3
 
             Text {
-                id: titleText
-                anchors.centerIn: parent
-                rotation: -90
-                width: 120
-                height: 18
+                rotation: 90
+                width: 110
+                height: 15
                 elide: Text.ElideRight
-                horizontalAlignment: Text.AlignHCenter
+                text: root.player ? root.player.trackArtist || "" : ""
+                color: root.playing ? Theme.bg : Theme.fgDim
+                font.family: Theme.fontFamily
+                font.pixelSize: 9
+                Behavior on color { ColorAnimation { duration: 150 } }
+            }
+
+            Text {
+                rotation: 90
+                width: 110
+                height: 17
+                elide: Text.ElideRight
                 text: root.player ? root.player.trackTitle || "" : ""
                 color: root.playing ? Theme.bg : Theme.fg
                 font.family: Theme.fontFamily
                 font.pixelSize: 11
                 Behavior on color { ColorAnimation { duration: 150 } }
             }
-        }
-
-        Text {
-            Layout.alignment: Qt.AlignHCenter
-            text: root.player ? (root.player.isPlaying ? "" : "") : ""
-            color: root.playing ? Theme.bg : Theme.fgDim
-            font.family: Theme.fontFamily
-            font.pixelSize: 10
-            Behavior on color { ColorAnimation { duration: 150 } }
         }
     }
 
