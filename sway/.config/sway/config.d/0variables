@@ -16,8 +16,10 @@ set $term ghostty
 # Toggles the quickshell launcher (drun) over IPC; Esc or click-outside closes.
 set $menu quickshell ipc call launcher toggle
 
-# set $browser brave-browser
-set $browser firefox
+# Notification center (quickshell IPC); bell in the bar also toggles it.
+set $notifications quickshell ipc call notifications toggle
+
+set $browser helium-browser
 set $editor code
 
 # Scripts bundled with this config (kept in the config dir for portability)

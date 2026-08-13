@@ -1,49 +1,37 @@
 #!/bin/sh
 # libdesk.sh — shared helpers for the desk scheme (sourced by goto_desk,
-# move_to_desk, startup_desk). IMPORTANT: keep this file free of literal
-# `set $x` lines so the overlay lookup below stays unambiguous.
+# move_to_desk, startup_desk, restore_desk).
 #
-# The machine overlay (mithrandir/tecnalia — the config file defining the
-# output variables) is the single source of truth:
-#   set $desks 9            optional, default 9
-#   set $a DP-1             -> workspace letter a
-#   set $b HDMI-A-1         -> workspace letter b
-#   ... up to $i (9 outputs), defined contiguously
-# Only outputs currently connected are used (dock/undock safe).
+# Desk letters are POSITIONAL: connected outputs are sorted by their
+# position in the global coordinate space (left→right, top→bottom) and
+# mapped to a, b, c, ... Shikane (~/.config/shikane/config.toml) pins
+# output geometry per machine/profile, so the letter order is
+# deterministic for a given arrangement (dock/undock stable).
 #
-# Cost per script: 1 get_workspaces query + 1 chained swaymsg command.
+# There is no per-machine config anymore: sway config is machine-agnostic
+# and the letter mapping is derived at runtime. $desks is fixed at 9
+# (bindings go up to $mod+9).
+#
+# Cost per script: 1 get_outputs query + 1 chained swaymsg command.
 
-SWAY_DIR="${SWAY_DIR:-$HOME/.config/sway}"
 OUTPUT_LETTERS="a b c d e f g h i"
+desks=9
 
 die() { printf 'desk: %s\n' "$*" >&2; exit 1; }
 
-# load_desk_map — sets: desks, letters (active letters), nouts, out_<letter>
+# load_desk_map — sets: letters (active letters), nouts, out_<letter>
 load_desk_map() {
-	overlay=$(grep -l '^set \$[a-i] ' "$SWAY_DIR"/* 2>/dev/null | head -1)
-	[ -n "$overlay" ] || die "no machine overlay defining output letters in $SWAY_DIR"
-	desks=$(sed -n 's/^set \$desks \([0-9][0-9]*\)$/\1/p' "$overlay" | head -1)
-	desks=${desks:-9}
-	case "$desks" in
-		[1-9]|[1-8][0-9]) ;;
-		*) die "invalid \$desks in $overlay" ;;
-	esac
-	connected=$(swaymsg -t get_outputs -r | jq -r '.[].name' | tr '\n' ' ')
 	letters=""
 	nouts=0
-	for letter in $OUTPUT_LETTERS; do
-		out=$(sed -n "s/^set \$$letter \([^ ]*\)\$/\1/p" "$overlay" | head -1)
-		[ -n "$out" ] || break
-		case " $connected " in
-			*" $out "*)
-				eval "out_$letter=\"$out\""
-				letters="$letters $letter" # space-separated, for word splitting
-				nouts=$((nouts + 1))
-				;;
-		esac
+	for out in $(swaymsg -t get_outputs -r | jq -r '[.[] | select(.active) | {name, x: .rect.x, y: .rect.y}] | sort_by(.x, .y) | .[].name'); do
+		letter=$(printf '%s' "$OUTPUT_LETTERS" | cut -d' ' -f$((nouts + 1)))
+		[ -n "$letter" ] || break # more outputs than letters
+		eval "out_$letter=\"$out\""
+		letters="$letters $letter" # space-separated, for word splitting
+		nouts=$((nouts + 1))
 	done
 	letters=${letters# } # strip leading space
-	[ "$nouts" -ge 1 ] || die "no mapped outputs are connected"
+	[ "$nouts" -ge 1 ] || die "no outputs connected"
 }
 
 # desk_switch_chain <desk> <last-letter> — print a sway command chain that

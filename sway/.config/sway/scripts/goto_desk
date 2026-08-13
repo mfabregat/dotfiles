@@ -2,15 +2,15 @@
 # goto_desk <desk> — switch the whole desk: every connected output shows
 # workspace <desk><letter>. Focus ends on the output you were on.
 #
-# Desk count comes from $desks in the machine overlay (default 9);
-# output letters from $first..$ninth. See scripts/libdesk.sh.
+# Desk count is $desks in libdesk.sh (default 9); output letters are
+# positional (left→right = a, b, c...). See scripts/libdesk.sh.
 
 . "$(dirname "$0")/libdesk.sh"
 
 desk="${1:-}"
 case "$desk" in
-	[0-9]) ;;
-	*) die "usage: goto_desk <desk 0-9>" ;;
+	[1-9]) ;;
+	*) die "usage: goto_desk <desk 1-9>" ;;
 esac
 
 load_desk_map

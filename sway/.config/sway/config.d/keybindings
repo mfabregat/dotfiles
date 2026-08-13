@@ -12,9 +12,12 @@ bindsym $mod+q kill
 # Start your launcher
 bindsym $mod+d exec $menu
 
+# Toggle the notification center
+bindsym $mod+n exec $notifications
+
 bindsym $mod+c exec $editor
 bindsym $mod+b exec $browser
-bindsym $mod+shift+b exec firefox --private-window
+bindsym $mod+shift+b exec $browser --incognito
 
 bindsym $mod+s exec spotify
 

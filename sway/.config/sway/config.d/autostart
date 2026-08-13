@@ -3,8 +3,6 @@ exec_always sh -c 'pkill -x waybar 2>/dev/null; pkill -x quickshell 2>/dev/null;
 exec_always autotiling
 exec_always sh -c 'pkill -x gammastep 2>/dev/null; exec gammastep-indicator'
 
-# Start Spotify at session start; for_window sends its window straight to
-# the background-apps desk (0a) so it never opens on the current workspace.
 # # Export Sway environment to systemd & D-Bus
 
 # exec systemctl --user import-environment DISPLAY WAYLAND_DISPLAY SWAYSOCK XDG_CURRENT_DESKTOP
@@ -12,5 +10,3 @@ exec_always sh -c 'pkill -x gammastep 2>/dev/null; exec gammastep-indicator'
 # Start GNOME Keyring daemon components
 exec dbus-update-activation-environment --all
 exec gnome-keyring-daemon --start --components=secrets,pkcs11,ssh
-
-exec_always $scripts/spotify-bg

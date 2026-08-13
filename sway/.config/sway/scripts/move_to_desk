@@ -3,15 +3,15 @@
 # <desk><letter> on the same output it is on, then switch the whole desk
 # there (focus lands on the moved window).
 #
-# Desk count from $desks in the machine overlay (default 9); output letters
-# from $first..$ninth. See scripts/libdesk.sh.
+# Desk count is $desks in libdesk.sh (default 9); output letters are
+# positional (left→right = a, b, c...). See scripts/libdesk.sh.
 
 . "$(dirname "$0")/libdesk.sh"
 
 desk="${1:-}"
 case "$desk" in
-	[0-9]) ;;
-	*) die "usage: move_to_desk <desk 0-9>" ;;
+	[1-9]) ;;
+	*) die "usage: move_to_desk <desk 1-9>" ;;
 esac
 
 load_desk_map

@@ -12,12 +12,13 @@ authoritative reference is `man 5 sway`.
      imports `DISPLAY`/`WAYLAND_DISPLAY`/`SWAYSOCK`/`XDG_CURRENT_DESKTOP`
      into the systemd user session.
   2. `variables` — shared defaults (`$mod`, `$term`, `$scripts`, ...).
-  3. A machine overlay (`mithrandir` / `tecnalia`) — only one is active;
-     the other sits behind a commented `# include`.
-  4. `config.d/*` — feature files (alphabetical: bar, input,
+  3. `config.d/*` — feature files (alphabetical: bar, input,
      keybindings, looks, navigation, output).
-- Later `set` redefinitions win, so overlays included after `variables`
-  can override shared defaults per machine.
+- There are NO per-machine files: the config is machine-agnostic. Output
+  geometry lives in shikane (see Dynamic outputs below), and the desk
+  scripts derive their output mapping from monitor positions at runtime
+  (see scripts/libdesk.sh). Adding a new machine = adding a shikane
+  profile, nothing in sway config.
 - `include` supports globs; relative paths resolve against the config
   directory.
 
@@ -35,9 +36,9 @@ authoritative reference is `man 5 sway`.
 
 - `set $name value`; `$name` expands at parse time in any config line.
 - Variables are NOT readable at runtime: no IPC exposes them, and
-  scripts cannot query them. If scripts need config values (e.g. output
-  names), parse the config files themselves (see `scripts/libdesk.sh`
-  for a `grep`/`sed` example), or keep the value in both places.
+  scripts cannot query them. The desk scripts avoid config values
+  entirely — they derive output names/order from `swaymsg get_outputs`
+  at runtime.
 - `$name` collision risk: short names are convenient but easy to
   collide with; document reserved names in comments.
 
@@ -104,6 +105,36 @@ authoritative reference is `man 5 sway`.
   command). Caveat: if the target workspace does not exist, it is created
   on the focused output — ensure placement first (pre-create it on the
   right output, or move it) when output correctness matters.
+
+## Dynamic outputs (shikane)
+
+- Output geometry (mode/position/scale/transform) is NOT configured in
+  sway anymore. `shikane` (~/.config/shikane/config.toml, stow package
+  `shikane/`) applies a matching profile at startup and on hotplug via the
+  wlr-output-management protocol. Started from `config.d/autostart` with
+  `exec_always sh -c 'pgrep -x shikane || exec shikane'` — guarded so a
+  sway reload does NOT restart it (a restart re-applies the profile =
+  modeset = brief black flash). Config changes are picked up with
+  `shikanectl reload`; shikane does not watch its config file.
+- Profile matching is exact: a profile applies only when every output in
+  it matches a connected display AND every connected display is matched.
+  Profiles for different machines coexist; only the matching one wins
+  (e.g. `mithrandir` on the desktop, `tecnalia-laptop` vs
+  `tecnalia-docked` on the laptop). Displays are matched by name
+  (`n=DP-1`); regenerate with `shikanectl export <name>` for
+  vendor/model/serial matching.
+- Because shikane pins positions deterministically, the desk scripts can
+  derive their letter mapping (left→right = a, b, c...) from output
+  positions at runtime — no per-machine config needed.
+- Per-profile `exec` commands run with `$SHIKANE_PROFILE_NAME` set
+  (per-output with `$SHIKANE_OUTPUT_NAME`). We use it to run
+  `scripts/restore_desk` after a profile is applied, so a dock/undock
+  re-applies the current desk to all connected outputs instead of waiting
+  for the next $mod+N press. `restore_desk` reads the focused workspace
+  name, extracts its desk number and delegates to `goto_desk`.
+- Reload the config without restarting: `shikanectl reload`.
+- Keep sway's `output * bg` (wallpaper) in `config.d/output` — shikane
+  does not touch background/scale of swaybg.
 - Each output shows its own workspace; `workspace 1a, workspace 1b`
   switches both outputs from a single bind (focus ends on the last).
 - `focus output <name>` moves focus between outputs; chains well with
@@ -186,7 +217,7 @@ authoritative reference is `man 5 sway`.
 
 ## Environment notes (this machine)
 
-- sway 1.11 on Debian; NVIDIA proprietary GPU, started with
+- sway 1.12 on Arch; NVIDIA proprietary GPU, started with
   `--unsupported-gpu` (hence validate noise).
 - Audio: pipewire + pipewire-pulse + wireplumber running; `wpctl` is
   available. `pactl`, `brightnessctl`, `grim`, `slurp`, `wl-copy` are
@@ -196,4 +227,7 @@ authoritative reference is `man 5 sway`.
   other machines; only dependency outside the folder is `jq`.
 - Desk-switching (workspace management) is implemented by the scripts
   in `scripts/` (`goto_desk`, `move_to_desk`, `startup_desk` +
-  `libdesk.sh`); see the script headers and `config.d/navigation`.
+  `libdesk.sh` + `restore_desk`); see the script headers and
+  `config.d/navigation`. Output geometry is shikane's job (see the
+  Dynamic outputs section above); desk letters are positional
+  (left→right = a, b, c...).

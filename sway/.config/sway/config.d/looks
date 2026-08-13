@@ -1,11 +1,16 @@
 default_border pixel 2
+smart_borders on
 default_floating_border pixel 2
 
 gaps inner 4
-# hide_edge_borders smart
-default_border none
+smart_gaps on
 
 # Hide the cursor after 2s of inactivity
 seat * hide_cursor 2000
 
-for_window [all] opacity 0.93
+# for_window [all] opacity 0.93
+
+# Colors
+client.focused #665c54 #665c54 #665c54 #665c54 #665c54
+client.unfocused #282828 #282828 #282828 #282828 #282828
+client.focused_inactive #282828 #282828 #282828 #282828 #282828

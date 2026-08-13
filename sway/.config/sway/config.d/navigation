@@ -1,10 +1,11 @@
 focus_follows_mouse no
 
 #
-# Desks (dynamic scheme): workspaces are <desk><letter> (0a..9c...). Desk 0
-# is the background-apps desk ($mod+grave, e.g. spotify, outlook). The
-# machine overlay (mithrandir/tecnalia) defines $desks (default 9) and
-# $a..$i -> letters; desk scripts only use connected outputs.
+# Desks (dynamic scheme): workspaces are <desk><letter> (1a..9c...). A
+# keybind switches the whole desk: every connected output shows
+# workspace <desk><letter>. Desk letters are positional: connected
+# outputs sorted by position (left→right = a, b, c...), as pinned by
+# shikane. No per-machine config; see scripts/libdesk.sh.
 #
 
 bindsym $mod+1 exec $scripts/goto_desk 1
@@ -27,10 +28,6 @@ bindsym $mod+Shift+6 exec $scripts/move_to_desk 6
 bindsym $mod+Shift+7 exec $scripts/move_to_desk 7
 bindsym $mod+Shift+8 exec $scripts/move_to_desk 8
 bindsym $mod+Shift+9 exec $scripts/move_to_desk 9
-
-# Background-apps desk (spotify, outlook, ...)
-bindsym $mod+grave exec $scripts/goto_desk 0
-bindsym $mod+Shift+grave exec $scripts/move_to_desk 0
 
 # Start on desk 1 (sway runs exec only at startup, not on reload)
 exec $scripts/startup_desk
