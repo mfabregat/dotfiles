@@ -2,6 +2,10 @@
 // Left click: play/pause · right click: next · middle click: open player.
 // Title + artist read top-to-bottom; while playing the whole widget turns
 // accent-colored (text flips to bg).
+//
+// NOTE: rotated items are positioned manually — QtQuick layouts mis-size
+// rotated children (the unrotated box is laid out, then rotated around the
+// origin, so the visual strip spans [x-height, x] × [y, y+width]).
 import Quickshell
 import Quickshell.Services.Mpris
 import QtQuick
@@ -17,8 +21,12 @@ Rectangle {
     readonly property bool hasPlayer: player !== null
     readonly property bool playing: player !== null && player.isPlaying
 
+    readonly property int titleLen: 100 // reading length of the title strip
+    readonly property int artistLen: 55 // reading length of the artist strip
+
     width: 30
-    height: 62
+    // iconText.implicitHeight: the glyph's real line height (font 15 -> 21)
+    height: 6 + iconText.implicitHeight + 3 + titleLen + 3 + artistLen
     visible: hasPlayer
     radius: 7
     color: playing ? Theme.accent
@@ -43,6 +51,7 @@ Rectangle {
         spacing: 3
 
         Text {
+            id: iconText
             Layout.alignment: Qt.AlignHCenter
             text: root.player ? (root.player.dbusName.toLowerCase().includes("spotify") ? "" : "") : ""
             color: root.playing ? Theme.bg : Theme.fgDim
@@ -51,33 +60,40 @@ Rectangle {
             Behavior on color { ColorAnimation { duration: 150 } }
         }
 
-        // Title + artist, rotated so they read top-to-bottom.
-        // A RowLayout of rotated texts becomes a vertical stack on screen.
-        RowLayout {
-            Layout.alignment: Qt.AlignHCenter
-            spacing: 3
+        // Strips area: title strip on top, artist strip below it, both
+        // reading top-to-bottom (rotation 90). Manual positions — see note.
+        Item {
+            id: stripsItem
+            Layout.fillWidth: true
+            Layout.fillHeight: true
 
             Text {
+                id: titleText
                 rotation: 90
-                width: 110
-                height: 15
-                elide: Text.ElideRight
-                text: root.player ? root.player.trackArtist || "" : ""
-                color: root.playing ? Theme.bg : Theme.fgDim
-                font.family: Theme.fontFamily
-                font.pixelSize: 9
-                Behavior on color { ColorAnimation { duration: 150 } }
-            }
-
-            Text {
-                rotation: 90
-                width: 110
+                width: root.titleLen
                 height: 17
+                x: 21 // visual strip spans [4, 21] (centered in the 24px content)
+                y: 0
                 elide: Text.ElideRight
                 text: root.player ? root.player.trackTitle || "" : ""
                 color: root.playing ? Theme.bg : Theme.fg
                 font.family: Theme.fontFamily
                 font.pixelSize: 11
+                Behavior on color { ColorAnimation { duration: 150 } }
+            }
+
+            Text {
+                id: artistText
+                rotation: 90
+                width: root.artistLen
+                height: 14
+                x: 19 // visual strip spans [5, 19]
+                y: root.titleLen + 3
+                elide: Text.ElideRight
+                text: root.player ? root.player.trackArtist || "" : ""
+                color: root.playing ? Theme.bg : Theme.fgDim
+                font.family: Theme.fontFamily
+                font.pixelSize: 9
                 Behavior on color { ColorAnimation { duration: 150 } }
             }
         }
