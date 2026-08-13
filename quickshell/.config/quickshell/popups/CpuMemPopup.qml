@@ -1,7 +1,8 @@
 // popups/CpuMemPopup.qml — system status details (CPU / MEM / TEMP).
 // Data comes from the existing CpuMemTemp poller (1s, shared with the
 // glyphs) — this popup adds zero polling. Hover-driven: no input grab;
-// closes when the pointer leaves it.
+// closes when the pointer leaves it. The history canvas repaints only
+// when its values change (cheap, skipped while hidden).
 import Quickshell
 import QtQuick
 import QtQuick.Layouts
@@ -15,7 +16,7 @@ AnchoredPopup {
 
     readonly property bool hovered: hoverArea.containsMouse
 
-    implicitWidth: 200
+    implicitWidth: 220
     implicitHeight: popupShell.implicitHeight
 
     PopupShell {
@@ -51,12 +52,20 @@ AnchoredPopup {
             Layout.fillWidth: true
             spacing: 6
 
+            // Keeps the grid aligned with the TEMP row's icon column
+            Item {
+                Layout.preferredWidth: 20
+                Layout.preferredHeight: 1
+            }
+
             Text {
                 text: "CORE"
                 color: Theme.fgDim
                 font.family: Theme.fontFamily
                 font.pixelSize: Theme.fontSizeSmall
-                Layout.preferredWidth: 32
+                font.bold: true
+                font.letterSpacing: Theme.letterSpacing
+                Layout.preferredWidth: 36
             }
 
             Grid {
@@ -69,7 +78,7 @@ AnchoredPopup {
 
                     delegate: Rectangle {
                         required property real modelData
-                        width: 9
+                        width: 10
                         height: 14
                         radius: 2
                         color: Theme.dark2
@@ -95,6 +104,7 @@ AnchoredPopup {
                 color: root.tempColorFor(CpuMemTemp.temp)
                 font.family: Theme.fontFamily
                 font.pixelSize: Theme.fontSizeGlyphs
+                Layout.preferredWidth: 20
             }
 
             Text {
@@ -102,7 +112,9 @@ AnchoredPopup {
                 color: Theme.fgDim
                 font.family: Theme.fontFamily
                 font.pixelSize: Theme.fontSizeSmall
-                Layout.preferredWidth: 26
+                font.bold: true
+                font.letterSpacing: Theme.letterSpacing
+                Layout.preferredWidth: 36
             }
 
             Rectangle {
@@ -124,6 +136,8 @@ AnchoredPopup {
                 color: Theme.fg
                 font.family: Theme.fontFamily
                 font.pixelSize: Theme.fontSizeSmall
+                Layout.preferredWidth: 32
+                horizontalAlignment: Text.AlignRight
             }
         }
     }
@@ -163,7 +177,7 @@ AnchoredPopup {
         property real percent: 0
 
         Layout.fillWidth: true
-        height: 26
+        height: 28
         spacing: 6
 
         Text {
@@ -171,7 +185,9 @@ AnchoredPopup {
             color: Theme.fgDim
             font.family: Theme.fontFamily
             font.pixelSize: Theme.fontSizeSmall
-            Layout.preferredWidth: 32
+            font.bold: true
+            font.letterSpacing: Theme.letterSpacing
+            Layout.preferredWidth: 36
         }
 
         Canvas {
@@ -205,7 +221,7 @@ AnchoredPopup {
             color: Theme.fg
             font.family: Theme.fontFamily
             font.pixelSize: Theme.fontSizeSmall
-            Layout.preferredWidth: 30
+            Layout.preferredWidth: 32
             horizontalAlignment: Text.AlignRight
         }
     }

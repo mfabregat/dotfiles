@@ -42,13 +42,13 @@ PanelWindow {
         onClicked: Notifications.closeCenter()
     }
 
-    // ── Card (right edge, next to the bar) ─────────────────────────────
+    // ── Card (bottom-right, next to the bar) ───────────────────────────
     Rectangle {
         id: card
         anchors.right: parent.right
         anchors.rightMargin: Theme.barWidth + 12
-        anchors.top: parent.top
-        anchors.topMargin: 12
+        anchors.bottom: parent.bottom
+        anchors.bottomMargin: 12
         width: 380
         radius: Theme.popupRadius
         color: Theme.bg

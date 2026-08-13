@@ -1,6 +1,7 @@
 // popups/NotificationPopup.qml — transient notification popups, one window
 // per screen (Variants in shell.qml). Shows the popups routed to this
-// screen (≤ 3, newest on top) in a small column just left of the bar.
+// screen (≤ 3) in a small column just left of the bar, growing upward
+// from the bottom-right corner (newest at the bottom, nearest the corner).
 // Urgency styling lives in NotificationRow (critical = red border; it also
 // never auto-dismisses). Hovering a popup pauses its timer.
 //
@@ -27,14 +28,19 @@ PanelWindow {
     property var routeScreen: null
     Component.onCompleted: root.routeScreen = root.modelData
 
-    anchors { top: true; right: true }
-    margins { top: 8; right: Theme.barWidth + 8 }
+    anchors { bottom: true; right: true }
+    margins { bottom: 8; right: Theme.barWidth + 8 }
     color: "transparent"
     exclusionMode: ExclusionMode.Ignore // transient — never shrink tiling area
 
     /// Popups routed to this screen (re-evaluates on every service list
     /// reassignment).
     readonly property var shown: Notifications.popups.filter(w => w.screen === root.routeScreen)
+
+    /// Same popups, oldest first: the window is anchored to the bottom
+    /// edge, so the newest item renders at the bottom of the column —
+    /// right at the corner.
+    readonly property var shownBottomUp: root.shown.slice().reverse()
 
     visible: root.shown.length > 0
     implicitWidth: 340
@@ -47,7 +53,7 @@ PanelWindow {
         spacing: 8
         clip: true
         boundsBehavior: Flickable.StopAtBounds
-        model: root.shown
+        model: root.shownBottomUp
 
         delegate: Item {
             // Inline wrapper delegate: a file-component delegate cannot see

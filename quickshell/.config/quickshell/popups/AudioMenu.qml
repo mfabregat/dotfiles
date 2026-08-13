@@ -1,4 +1,6 @@
 // popups/AudioMenu.qml — output device picker (replaces waybar audio_menu.sh).
+// The default sink is marked with a raised row + 3px accent indicator;
+// everything else stays quiet until hovered.
 import Quickshell
 import Quickshell.Services.Pipewire
 import QtQuick
@@ -8,20 +10,14 @@ import qs
 AnchoredPopup {
     id: root
 
-    implicitWidth: 260
+    implicitWidth: 280
     implicitHeight: Math.min(popupShell.implicitHeight, 420)
 
     PopupShell {
         id: popupShell
         anchors.fill: parent
 
-        Text {
-            text: "Output devices"
-            color: Theme.fgDim
-            font.family: Theme.fontFamily
-            font.pixelSize: Theme.fontSizeSmall
-            font.bold: true
-        }
+        SectionLabel { text: "Output" }
 
         Repeater {
             model: Pipewire.nodes
@@ -34,13 +30,27 @@ AnchoredPopup {
                 width: parent.width
                 height: visibleRow ? Theme.popupRowHeight : 0
                 visible: visibleRow
-                radius: 6
+                radius: Theme.radius
                 color: rowArea.containsMouse ? Theme.bgHover
-                     : isDefault ? Theme.dark1 : "transparent"
+                     : isDefault ? Theme.bgAlt : "transparent"
+                Behavior on color { ColorAnimation { duration: 150 } }
+
+                // Active device indicator
+                Rectangle {
+                    visible: isDefault
+                    anchors.left: parent.left
+                    anchors.leftMargin: 4
+                    anchors.verticalCenter: parent.verticalCenter
+                    width: 3
+                    height: Math.round(parent.height * 0.45)
+                    radius: 2
+                    color: Theme.accent
+                }
 
                 RowLayout {
                     anchors.fill: parent
-                    anchors.margins: 6
+                    anchors.leftMargin: 12
+                    anchors.rightMargin: 10
                     spacing: 8
 
                     Text {
@@ -48,6 +58,7 @@ AnchoredPopup {
                         color: isDefault ? Theme.accent : Theme.fgDim
                         font.family: Theme.fontFamily
                         font.pixelSize: Theme.fontSize
+                        Behavior on color { ColorAnimation { duration: 150 } }
                     }
 
                     Text {
@@ -57,6 +68,7 @@ AnchoredPopup {
                         color: isDefault ? Theme.fg : Theme.fgDim
                         font.family: Theme.fontFamily
                         font.pixelSize: Theme.fontSize
+                        Behavior on color { ColorAnimation { duration: 150 } }
                     }
 
                     Text {
@@ -80,4 +92,14 @@ AnchoredPopup {
         }
     }
 
+    // ── Section header (small caps micro-label) ────────────────────────
+    component SectionLabel: Text {
+        text: ""
+        color: Theme.fgDim
+        font.family: Theme.fontFamily
+        font.pixelSize: Theme.fontSizeSmall
+        font.bold: true
+        font.capitalization: Font.AllUppercase
+        font.letterSpacing: Theme.letterSpacing
+    }
 }

@@ -43,7 +43,7 @@ Singleton {
     readonly property color bg: dark0
     readonly property color bgAlt: dark1
     readonly property color bgHover: dark2
-    readonly property color accent: brightGreen
+    readonly property color accent: neutralGreen
     readonly property color urgent: brightRed
     readonly property color warn: brightYellow
 
@@ -57,10 +57,12 @@ Singleton {
     readonly property int widgetWidth: 22 // width of every bar widget
 
     // ── Popups (calendar, audio menu, power menu) ─────────────────────
-    readonly property int padding: 5     // inner padding of popup panels
-    readonly property int radius: 6      // popup corner radius
-    readonly property int popupRowHeight: 24 // menu row height (devices, actions)
-    readonly property int calendarCell: 23  // calendar day cell size
+    readonly property int padding: 12    // inner padding of popup panels
+    readonly property int radius: 6      // small-element radius (rows, cells, buttons)
+    readonly property int popupRadius: 12 // popup panel corner radius
+    readonly property int popupRowHeight: 28 // menu row height (devices, actions)
+    readonly property int calendarCell: 26  // calendar day cell size
+    readonly property int letterSpacing: 2  // section labels
 
     // ── Pills (workspaces / taskbar / tray icons) ─────────────────────
     readonly property int pillWidth: 21

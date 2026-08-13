@@ -4,6 +4,7 @@ import Quickshell.Services.UPower
 import QtQuick
 import QtQuick.Layouts
 import qs
+import qs.popups
 
 Rectangle {
     id: root
@@ -58,5 +59,6 @@ Rectangle {
         id: area
         anchors.fill: parent
         hoverEnabled: true
+        onPressed: PopupManager.hideOpen()
     }
 }

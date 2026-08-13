@@ -4,6 +4,7 @@ import Quickshell
 import QtQuick
 import QtQuick.Layouts
 import qs
+import qs.popups
 import qs.services
 
 Rectangle {
@@ -43,6 +44,7 @@ Rectangle {
         id: area
         anchors.fill: parent
         hoverEnabled: true
+        onPressed: PopupManager.hideOpen()
 
         onWheel: (wheel) => {
             const dir = wheel.angleDelta.y > 0 ? "+" : "-";

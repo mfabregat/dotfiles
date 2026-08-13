@@ -60,10 +60,7 @@ Item {
         anchors.fill: parent
         hoverEnabled: true
 
-        onClicked: {
-            if (root.detailsPopup.visible) root.detailsPopup.hide();
-            else root.detailsPopup.showAt(root);
-        }
+        onClicked: root.detailsPopup.showAt(root) // PopupManager toggles it
         onEntered: openTimer.start()
         onExited: closeTimer.start()
     }

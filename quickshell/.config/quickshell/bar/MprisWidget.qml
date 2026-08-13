@@ -1,4 +1,4 @@
-// bar/MprisWidget.qml — now playing (spotify preferred).
+// bar/MprisWidget.qml — now playing (spotify preferred, browsers ignored).
 // Left click: play/pause · right click: next · middle click: open player.
 // Title + artist read top-to-bottom; while playing the whole widget turns
 // accent-colored (text flips to bg).
@@ -11,6 +11,7 @@ import Quickshell.Services.Mpris
 import QtQuick
 import QtQuick.Layouts
 import qs
+import qs.popups
 
 Rectangle {
     id: root
@@ -31,10 +32,13 @@ Rectangle {
     // from this widget's own size.
     readonly property int maxTitleLen: 180
     readonly property int maxArtistLen: 180
+    // Extra empty space below the artist strip; counted in both availableLen
+    // and implicitHeight so the widget never exceeds its freeSpace cap.
+    readonly property real bottomPad: Theme.spacing
     readonly property real titleNatural: Math.min(titleText.implicitWidth, maxTitleLen)
     readonly property real artistNatural: Math.min(artistText.implicitWidth, maxArtistLen)
     readonly property real availableLen: Math.max(0, root.freeSpace
-        - 4 - iconText.implicitHeight - 3 - 2 - dashText.height - 2)
+        - 4 - iconText.implicitHeight - 3 - 2 - dashText.height - 2 - root.bottomPad)
 
     readonly property real titleLen: root.titleNatural + root.artistNatural <= root.availableLen
         ? root.titleNatural
@@ -46,23 +50,37 @@ Rectangle {
     width: Theme.widgetWidth
     // Sized by the layout to exactly this (no fill, no loop)
     implicitHeight: 4 + iconText.implicitHeight + 3
-        + root.titleLen + 2 + dashText.height + 2 + root.artistLen
+        + root.titleLen + 2 + dashText.height + 2 + root.artistLen + root.bottomPad
     visible: hasPlayer
     radius: 7
     color: playing ? Theme.accent
          : area.containsMouse ? Theme.bgHover : "transparent"
     Behavior on color { ColorAnimation { duration: 150 } }
 
+    // Browsers register an MPRIS player for tab audio (YouTube etc.); the
+    // widget should only show real players, so exclude them here.
+    function isBrowserPlayer(p: var): bool {
+        const hay = ((p.dbusName || "") + " " + (p.desktopEntry || "") + " "
+            + (p.identity || "")).toLowerCase();
+        return /(?:^|[._ -])(?:firefox|chromium|chrome|brave|vivaldi|edge|opera|epiphany|qutebrowser|falkon|konqueror|webkit2|webkitgtk)(?:[._ -]|$)/
+            .test(hay);
+    }
+
     function pickPlayer(players: var): var {
         // Prefer spotify (matching the old waybar "player": "spotify")
         for (let i = 0; i < players.length; i++) {
             const p = players[i];
+            if (isBrowserPlayer(p)) continue;
             if (p.dbusName.toLowerCase().includes("spotify")) return p;
         }
         // Otherwise the first playing player, else the first player
-        for (let i = 0; i < players.length; i++)
+        for (let i = 0; i < players.length; i++) {
+            if (isBrowserPlayer(players[i])) continue;
             if (players[i].isPlaying) return players[i];
-        return players.length > 0 ? players[0] : null;
+        }
+        for (let i = 0; i < players.length; i++)
+            if (!isBrowserPlayer(players[i])) return players[i];
+        return null;
     }
 
     ColumnLayout {
@@ -141,12 +159,12 @@ Rectangle {
         hoverEnabled: true
         visible: root.hasPlayer
         acceptedButtons: Qt.LeftButton | Qt.RightButton | Qt.MiddleButton
-
         onClicked: (mouse) => {
             if (mouse.button === Qt.LeftButton)
                 root.player.togglePlaying();
         }
         onPressed: (mouse) => {
+            PopupManager.hideOpen();
             if (mouse.button === Qt.RightButton && root.player.canGoNext)
                 root.player.next();
             else if (mouse.button === Qt.MiddleButton)

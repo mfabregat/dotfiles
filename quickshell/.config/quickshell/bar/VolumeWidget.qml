@@ -5,6 +5,7 @@ import Quickshell.Services.Pipewire
 import QtQuick
 import QtQuick.Layouts
 import qs
+import qs.popups
 
 Rectangle {
     id: root
@@ -69,8 +70,11 @@ Rectangle {
         acceptedButtons: Qt.LeftButton | Qt.RightButton // right = device menu
 
         onClicked: (mouse) => {
-            if (mouse.button === Qt.LeftButton && root.node && root.node.audio)
-                root.node.audio.muted = !root.node.audio.muted;
+            if (mouse.button === Qt.LeftButton) {
+                PopupManager.hideOpen(); // left is mute, not the menu trigger
+                if (root.node && root.node.audio)
+                    root.node.audio.muted = !root.node.audio.muted;
+            }
         }
         onPressed: (mouse) => {
             if (mouse.button === Qt.RightButton)

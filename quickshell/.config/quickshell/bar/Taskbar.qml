@@ -6,6 +6,7 @@ import Quickshell.Wayland
 import QtQuick
 import QtQuick.Layouts
 import qs
+import qs.popups
 
 Column {
     id: root
@@ -37,8 +38,9 @@ Column {
             height: Theme.pillWidth
             radius: 6
             color: area.containsMouse ? Theme.bgHover
-                 : modelData.activated ? Theme.dark1
+                 : modelData.activated ? Theme.fgDim
                  : "transparent"
+            Behavior on color { ColorAnimation { duration: 150 } }
 
             Image {
                 id: icon
@@ -54,7 +56,7 @@ Column {
                 anchors.centerIn: parent
                 visible: !icon.visible
                 text: modelData.appId ? modelData.appId.charAt(0).toUpperCase() : "?"
-                color: modelData.activated ? Theme.fg : Theme.fgDim
+                color: modelData.activated ? Theme.dark0 : Theme.fgDim
                 font.family: Theme.fontFamily
                 font.pixelSize: Theme.fontSizeSmall
                 font.bold: true
@@ -65,12 +67,12 @@ Column {
                 anchors.fill: parent
                 hoverEnabled: true
                 acceptedButtons: Qt.LeftButton | Qt.MiddleButton
-
                 onClicked: (mouse) => {
                     if (mouse.button === Qt.LeftButton)
                         modelData.activate();
                 }
                 onPressed: (mouse) => {
+                    PopupManager.hideOpen();
                     if (mouse.button === Qt.MiddleButton)
                         modelData.close();
                 }

@@ -1,5 +1,7 @@
 // popups/PowerMenu.qml — lock / logout / suspend / reboot / shutdown.
 // Destructive actions are two-step (click once to arm, again to confirm).
+// Layout: micro-label section header, rows grouped with a divider between
+// safe and destructive actions.
 import Quickshell
 import QtQuick
 import QtQuick.Layouts
@@ -8,7 +10,7 @@ import qs
 AnchoredPopup {
     id: root
 
-    implicitWidth: 220
+    implicitWidth: 230
     implicitHeight: popupShell.implicitHeight
 
     property int armedAction: -1
@@ -16,6 +18,8 @@ AnchoredPopup {
     PopupShell {
         id: popupShell
         anchors.fill: parent
+
+        SectionLabel { text: "Power" }
 
         PowerRow {
             icon: ""
@@ -39,6 +43,8 @@ AnchoredPopup {
             onTriggered: Quickshell.execDetached(["systemctl", "suspend"])
         }
 
+        Divider {}
+
         PowerRow {
             icon: ""
             label: "Reboot"
@@ -56,6 +62,23 @@ AnchoredPopup {
         }
     }
 
+    // ── Section header (small caps micro-label) ────────────────────────
+    component SectionLabel: Text {
+        text: ""
+        color: Theme.fgDim
+        font.family: Theme.fontFamily
+        font.pixelSize: Theme.fontSizeSmall
+        font.bold: true
+        font.capitalization: Font.AllUppercase
+        font.letterSpacing: Theme.letterSpacing
+    }
+
+    component Divider: Rectangle {
+        width: parent.width
+        height: 1
+        color: Theme.dark2
+    }
+
     // ── Row with two-step confirm ───────────────────────────────────────
     component PowerRow: Rectangle {
         id: row
@@ -67,28 +90,33 @@ AnchoredPopup {
         signal triggered
 
         width: parent.width
-        height: 26
-        radius: 6
+        height: Theme.popupRowHeight
+        radius: Theme.radius
         color: rowArea.containsMouse ? Theme.bgHover : "transparent"
+        Behavior on color { ColorAnimation { duration: 150 } }
 
         readonly property bool armed: root.armedAction === actionId
 
         Text {
             anchors.left: parent.left
-            anchors.leftMargin: 8
+            anchors.leftMargin: 10
             anchors.verticalCenter: parent.verticalCenter
             text: row.icon
-            color: armed ? Theme.brightYellow : Theme.fg
+            color: armed ? Theme.warn : Theme.fgDim
             font.family: Theme.fontFamily
             font.pixelSize: Theme.fontSizeGlyphs
+            Behavior on color { ColorAnimation { duration: 150 } }
         }
 
         Text {
-            anchors.centerIn: parent
+            anchors.left: parent.left
+            anchors.leftMargin: 36
+            anchors.verticalCenter: parent.verticalCenter
             text: armed ? row.armText : row.label
-            color: armed ? Theme.brightYellow : Theme.fg
+            color: armed ? Theme.warn : Theme.fg
             font.family: Theme.fontFamily
             font.pixelSize: Theme.fontSize
+            Behavior on color { ColorAnimation { duration: 150 } }
         }
 
         MouseArea {

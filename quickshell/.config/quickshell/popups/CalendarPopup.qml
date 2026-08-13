@@ -1,4 +1,6 @@
 // popups/CalendarPopup.qml — month calendar popup (native PopupWindow).
+// Minimal card: month nav + day grid. Today is the single accent; nav
+// buttons give hover feedback (the only interactive elements).
 import Quickshell
 import QtQuick
 import QtQuick.Layouts
@@ -14,7 +16,7 @@ AnchoredPopup {
     property var cells: []
 
     implicitWidth: 7 * cell + Theme.padding * 2
-    implicitHeight: 28 + 6 * cell + Theme.padding * 2
+    implicitHeight: 20 + 12 + 6 * cell + 16 // nav + weekdays + grid + 2×8 spacing
 
     PopupShell {
         anchors.fill: parent
@@ -22,7 +24,7 @@ AnchoredPopup {
         // Header: ‹ August 2026 ›
         RowLayout {
             Layout.fillWidth: true
-            spacing: 4
+            spacing: 6
 
             NavButton {
                 text: ""
@@ -40,6 +42,7 @@ AnchoredPopup {
                 font.family: Theme.fontFamily
                 font.pixelSize: Theme.fontSize
                 font.bold: true
+                font.letterSpacing: 1
             }
 
             NavButton {
@@ -51,7 +54,7 @@ AnchoredPopup {
             }
         }
 
-        // Weekday headers
+        // Weekday headers (Monday-first, matching the locale)
         RowLayout {
             Layout.fillWidth: true
             spacing: 0
@@ -60,17 +63,18 @@ AnchoredPopup {
                 model: ["L", "M", "X", "J", "V", "S", "D"]
                 Text {
                     Layout.preferredWidth: root.cell
-                    Layout.preferredHeight: 14
+                    Layout.preferredHeight: 12
                     horizontalAlignment: Text.AlignHCenter
                     text: modelData
                     color: Theme.fgDim
                     font.family: Theme.fontFamily
                     font.pixelSize: Theme.fontSizeSmall
+                    font.bold: true
                 }
             }
         }
 
-        // Day grid (Monday-first, matching the locale)
+        // Day grid
         Grid {
             columns: 7
             spacing: 0
@@ -88,8 +92,9 @@ AnchoredPopup {
 
                     width: root.cell
                     height: root.cell
-                    radius: 5
-                    color: isToday ? Theme.brightYellow : "transparent"
+                    radius: Theme.radius
+                    color: isToday ? Theme.accent : "transparent"
+                    Behavior on color { ColorAnimation { duration: 150 } }
 
                     Text {
                         anchors.centerIn: parent
@@ -111,10 +116,11 @@ AnchoredPopup {
         property string text: ""
         signal clicked
 
-        width: 17
-        height: 15
-        radius: 5
+        width: 20
+        height: 20
+        radius: Theme.radius
         color: btnArea.containsMouse ? Theme.bgHover : "transparent"
+        Behavior on color { ColorAnimation { duration: 150 } }
 
         Text {
             anchors.centerIn: parent
@@ -122,6 +128,7 @@ AnchoredPopup {
             color: Theme.fg
             font.family: Theme.fontFamily
             font.pixelSize: Theme.fontSizeSmall
+            font.bold: true
         }
 
         MouseArea {

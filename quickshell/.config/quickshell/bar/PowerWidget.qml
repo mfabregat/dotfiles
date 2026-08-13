@@ -15,9 +15,10 @@ Rectangle {
     Text {
         anchors.centerIn: parent
         text: ""
-        color: Theme.fg
+        color: area.containsMouse || area.pressed ? Theme.brightRed : Theme.fg
         font.family: Theme.fontFamily
         font.pixelSize: Theme.fontSizeGlyphs
+        Behavior on color { ColorAnimation { duration: 150 } }
     }
 
     MouseArea {

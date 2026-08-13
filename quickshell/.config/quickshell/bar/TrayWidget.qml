@@ -5,6 +5,7 @@ import Quickshell.Services.SystemTray
 import QtQuick
 import QtQuick.Layouts
 import qs
+import qs.popups
 
 Item {
     id: root
@@ -73,6 +74,7 @@ Item {
                         }
                     }
                     onPressed: (mouse) => {
+                        PopupManager.hideOpen();
                         if (mouse.button === Qt.RightButton) showMenu();
                     }
                 }

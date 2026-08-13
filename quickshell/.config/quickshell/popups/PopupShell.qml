@@ -1,4 +1,6 @@
-// popups/PopupShell.qml — styled container for popup content (gruvbox).
+// popups/PopupShell.qml — styled card container for popup content (gruvbox).
+// Flat card: solid bg, 1px subtle border, generous padding, no shadow/blur
+// (cheap to composite, nothing animates except hover colors).
 import QtQuick
 import qs
 
@@ -8,7 +10,7 @@ Rectangle {
     default property alias content: contentCol.data
 
     color: Theme.bg
-    radius: Theme.radius
+    radius: Theme.popupRadius
     border.color: Theme.dark2
     border.width: 1
 
@@ -21,6 +23,6 @@ Rectangle {
         id: contentCol
         anchors.fill: parent
         anchors.margins: Theme.padding
-        spacing: Theme.spacing
+        spacing: 8
     }
 }

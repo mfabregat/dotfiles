@@ -50,6 +50,14 @@ Scope {
                 anchorWindow: barWindow
             }
 
+            // Dismiss any open popup when pressing empty bar space (the
+            // widgets' own MouseAreas dismiss on their presses too).
+            MouseArea {
+                anchors.fill: parent
+                acceptedButtons: Qt.AllButtons
+                onPressed: PopupManager.hideOpen()
+            }
+
             // ── Bar content ─────────────────────────────────────────────
             ColumnLayout {
                 anchors.fill: parent
@@ -65,29 +73,18 @@ Scope {
 
                     MprisWidget {
                         Layout.alignment: Qt.AlignHCenter
-                        // Space between workspaces and the taskbar (fixed
-                        // siblings only — acyclic; the two spacers absorb
-                        // whatever the text leaves over)
-                        freeSpace: barWindow.height - wsWidget.height
-                            - taskbarWidget.height - bottomGroup.height - 5 * Theme.spacing
+                        // Max height: from below the workspaces to the top
+                        // edge of the centered taskbar (fixed siblings only
+                        // — acyclic; the fill item absorbs any leftover)
+                        freeSpace: (barWindow.height - taskbarWidget.height) / 2
+                            - 3 - wsWidget.height - Theme.spacing
                     }
 
                     Item {
                         Layout.fillHeight: true
                     }
 
-                    // Center: all windows (taskbar)
-                    Taskbar {
-                        id: taskbarWidget
-                        Layout.alignment: Qt.AlignHCenter
-                    }
-
-                    Item {
-                        Layout.fillHeight: true
-                    }
-
-                    // Bottom: system + clock + power (one block so the
-                    // mpris freeSpace can use its total height)
+                    // Bottom: system + clock + power (one fixed block)
                     Column {
                         id: bottomGroup
                         width: 22
@@ -112,6 +109,8 @@ Scope {
 
                         BatteryWidget {}
 
+                        NotificationsWidget {}
+
                         ClockWidget {
                             calendar: calendarPopup
                         }
@@ -120,6 +119,14 @@ Scope {
                             powerMenu: powerMenu
                         }
                 }
+            }
+
+            // Center: all windows (taskbar) — pinned to the true vertical
+            // center of the bar so it never drifts as the mpris text changes.
+            Taskbar {
+                id: taskbarWidget
+                anchors.horizontalCenter: parent.horizontalCenter
+                anchors.verticalCenter: parent.verticalCenter
             }
         }
     }

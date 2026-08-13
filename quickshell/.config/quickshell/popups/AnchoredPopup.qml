@@ -53,17 +53,26 @@ PopupWindow {
     anchor.rect.width: 1
     anchor.rect.height: 1
 
-    /// Open the popup anchored to the given widget (must live in the bar window).
+    /// Open the popup anchored to the given widget (must live in the bar
+    /// window). Registers with PopupManager: any other popup closes, and
+    /// re-opening the same one toggles it closed.
     function showAt(item: var): void {
         const p = item.mapToItem(root.anchorWindow.contentItem, 0, 0);
         root.itemX = p.x;
         root.itemCenterY = p.y + item.height / 2;
         root.anchorItem = item;
         root.visible = true;
+        PopupManager.open(root);
     }
 
     /// Close the popup.
     function hide(): void {
         root.visible = false;
+    }
+
+    // Keep the manager registry in sync on every close path (hide(),
+    // native xdg grab dismissal, hover-exit).
+    onVisibleChanged: {
+        if (!root.visible) PopupManager.closed(root);
     }
 }
