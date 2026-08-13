@@ -3,6 +3,26 @@
 Status: **approved blueprint** — implementation follows the phases below.
 Date: 2026-08 · Quickshell 0.3.0 (Arch `extra/quickshell`, latest release, docs at `quickshell.org/docs/v0.3.0`)
 
+## ⚠️ Agent working rules (learned the hard way — read first)
+
+1. **Verify before tagging a landmine.** Most "landmines" recorded in this
+   plan turned out to be **false or misdiagnosed** when actually verified
+   (see the Landmine audit below): PopupWindow is not broken, QML function
+   calls *are* reactive, inline components *can* see root props, `index`
+   works in delegates (unless `required property var modelData` is
+   declared), and structural hot reloads do map. A tagged landmine without
+   a minimal reproduction is a bug report written by someone who didn't
+   file it. **Before recording or working around any suspected limitation:
+   reproduce it in a throwaway config** (`quickshell -p /tmp/…`, separate
+   instance, live logs) and only then decide.
+2. **Never trust a claim that contradicts the docs without a repro** — the
+   quickshell docs were right where the code comments were wrong.
+3. **No visual verification by the agent.** The model must only verify via
+   command-line / programmatic means: quickshell logs, `quickshell ipc`,
+   `swaymsg -t get_tree/get_seats`, unit tests (e.g. `node`), grep over
+   qmltypes/source. When a visual check is genuinely needed (appearance,
+   animation, layout), **ask the user to verify** — never screenshot.
+
 ## Goals
 
 - Replace waybar (both bars), rofi, swaylock, swaynag, and the waybar helper
@@ -312,3 +332,8 @@ No other phase-2/3 assumptions were found questionable (popup anchoring,
 DesktopEntries async scan, `.values` reactivity, polling services with no
 native alternative — `Quickshell.Io` has no file-watch type in 0.3.0;
 FileView is HEAD-only).
+
+**Pattern:** of the assumptions that were actually verified, most were
+false or misdiagnosed. All were tagged by agents without a minimal
+reproduction. Future agents: reproduce first, tag later (see Agent
+working rules at the top of this plan).
