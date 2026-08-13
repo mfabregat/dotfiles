@@ -43,8 +43,8 @@ Rectangle {
 
         Text {
             Layout.alignment: Qt.AlignHCenter
-            text: root.wifi ? "" : ""
-            color: root.activeNet ? Theme.fg : Theme.fgDim
+            text: root.wifi ? "" : "󰈀"
+            color: root.activeNet ? Theme.fg : Theme.accent
             font.family: Theme.fontFamily
             font.pixelSize: 14
         }

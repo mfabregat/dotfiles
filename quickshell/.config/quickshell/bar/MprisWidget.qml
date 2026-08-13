@@ -1,5 +1,6 @@
 // bar/MprisWidget.qml — now playing (spotify preferred).
-// Left click: play/pause · right click: next · middle click: focus window.
+// Left click: play/pause · right click: next · middle click: open player.
+// While playing the whole widget turns accent-colored (text flips to bg).
 import Quickshell
 import Quickshell.Services.Mpris
 import QtQuick
@@ -13,12 +14,15 @@ Rectangle {
     // appear/disappear (function calls alone are not tracked by QML).
     readonly property var player: pickPlayer(Mpris.players.values)
     readonly property bool hasPlayer: player !== null
+    readonly property bool playing: player !== null && player.isPlaying
 
     width: 30
     height: hasPlayer ? 150 : 0
     visible: hasPlayer
     radius: 7
-    color: area.containsMouse ? Theme.bgHover : "transparent"
+    color: playing ? Theme.accent
+         : area.containsMouse ? Theme.bgHover : "transparent"
+    Behavior on color { ColorAnimation { duration: 150 } }
 
     function pickPlayer(players: var): var {
         // Prefer spotify (matching the old waybar "player": "spotify")
@@ -40,9 +44,10 @@ Rectangle {
         Text {
             Layout.alignment: Qt.AlignHCenter
             text: root.player ? (root.player.dbusName.toLowerCase().includes("spotify") ? "" : "") : ""
-            color: root.player && root.player.isPlaying ? Theme.accent : Theme.fgDim
+            color: root.playing ? Theme.bg : Theme.fgDim
             font.family: Theme.fontFamily
             font.pixelSize: 15
+            Behavior on color { ColorAnimation { duration: 150 } }
         }
 
         // Rotated track title (reads bottom-to-top, like the old bar)
@@ -59,18 +64,20 @@ Rectangle {
                 elide: Text.ElideRight
                 horizontalAlignment: Text.AlignHCenter
                 text: root.player ? root.player.trackTitle || "" : ""
-                color: Theme.fg
+                color: root.playing ? Theme.bg : Theme.fg
                 font.family: Theme.fontFamily
                 font.pixelSize: 11
+                Behavior on color { ColorAnimation { duration: 150 } }
             }
         }
 
         Text {
             Layout.alignment: Qt.AlignHCenter
             text: root.player ? (root.player.isPlaying ? "" : "") : ""
-            color: Theme.fgDim
+            color: root.playing ? Theme.bg : Theme.fgDim
             font.family: Theme.fontFamily
             font.pixelSize: 10
+            Behavior on color { ColorAnimation { duration: 150 } }
         }
     }
 
@@ -79,8 +86,12 @@ Rectangle {
         anchors.fill: parent
         hoverEnabled: true
         visible: root.hasPlayer
+        acceptedButtons: Qt.LeftButton | Qt.RightButton | Qt.MiddleButton
 
-        onClicked: root.player.togglePlaying()
+        onClicked: (mouse) => {
+            if (mouse.button === Qt.LeftButton)
+                root.player.togglePlaying();
+        }
         onPressed: (mouse) => {
             if (mouse.button === Qt.RightButton && root.player.canGoNext)
                 root.player.next();
@@ -89,11 +100,11 @@ Rectangle {
         }
     }
 
-    // Replaces the old player_focus.sh: try MPRIS raise(), fall back to
-    // focusing the player process window via sway IPC.
+    // Replaces the old player_focus.sh: raise the window via MPRIS and
+    // focus it through sway (works even when raise() is unsupported).
     function focusPlayerWindow(): void {
         if (!root.player) return;
-        if (root.player.canRaise) { root.player.raise(); return; }
+        if (root.player.canRaise) root.player.raise();
 
         const name = root.player.dbusName.split(".").pop();
         Quickshell.execDetached([
