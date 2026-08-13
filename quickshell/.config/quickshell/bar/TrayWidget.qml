@@ -1,4 +1,4 @@
-// bar/TrayWidget.qml — StatusNotifier tray items.
+// bar/TrayWidget.qml — StatusNotifier tray items (max 4, clipped).
 // Left click: activate · right click: native DBusMenu.
 import Quickshell
 import Quickshell.Services.SystemTray
@@ -11,11 +11,15 @@ Item {
 
     required property var barWindow
 
+    readonly property int shown: Math.min(SystemTray.items.values.length, 4)
+
     width: 30
-    height: Math.min(Math.max(trayCol.implicitHeight, 0), 150)
+    // Layouts honor Layout.preferredHeight (bound `height` gets overridden)
+    Layout.preferredHeight: shown * 30
+    height: shown * 30
+    clip: true // overflow (5+ items) is hidden, never overlaps the clock
 
     Column {
-        id: trayCol
         anchors.fill: parent
         spacing: 2
 

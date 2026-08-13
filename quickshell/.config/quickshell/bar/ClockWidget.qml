@@ -3,12 +3,11 @@ import Quickshell
 import QtQuick
 import QtQuick.Layouts
 import qs
-import qs.services
 
 Rectangle {
     id: root
 
-    required property var screen
+    required property var calendar
 
     width: 30
     height: 40
@@ -48,9 +47,6 @@ Rectangle {
         id: area
         anchors.fill: parent
         hoverEnabled: true
-        onClicked: {
-            const cal = PopupRegistry.find(root.screen, "calendar");
-            if (cal) cal.showAt(root.mapToGlobal(0, 0).y);
-        }
+        onClicked: root.calendar.showAt(root)
     }
 }

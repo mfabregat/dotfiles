@@ -5,7 +5,7 @@ import QtQuick
 import QtQuick.Layouts
 import qs
 
-LayerPopup {
+AnchoredPopup {
     id: root
 
     implicitWidth: 220
@@ -13,7 +13,11 @@ LayerPopup {
 
     property int armedAction: -1
 
-    PowerRow {
+    PopupShell {
+        id: popupShell
+        anchors.fill: parent
+
+        PowerRow {
             icon: ""
             label: "Lock"
             onTriggered: Quickshell.execDetached(["quickshell", "ipc", "call", "lock", "lock"])
@@ -50,6 +54,7 @@ LayerPopup {
             armText: "Shut down again?"
             onTriggered: Quickshell.execDetached(["systemctl", "poweroff"])
         }
+    }
 
     // ── Row with two-step confirm ───────────────────────────────────────
     component PowerRow: Rectangle {
@@ -99,7 +104,7 @@ LayerPopup {
                 root.armedAction = -1;
                 armTimer.stop();
                 row.triggered();
-                root.hide();
+                root.visible = false;
             }
         }
     }

@@ -1,9 +1,6 @@
 // bar/RightBar.qml — the shell's right-edge bar, one instance per screen.
 // Phase 2: workspaces, taskbar, mpris, cpu/mem/temp, volume, backlight,
 // network, layout, tray, battery, clock, power + calendar/audio/power popups.
-//
-// Windows must be Variants delegates in quickshell 0.3.0 (direct children
-// never map), so the bar AND every popup get their own per-screen Variants.
 import Quickshell
 import QtQuick
 import QtQuick.Layouts
@@ -14,7 +11,6 @@ import qs.popups
 Scope {
     id: root
 
-    // ── Bar per screen ──────────────────────────────────────────────────
     Variants {
         model: Quickshell.screens
 
@@ -33,6 +29,23 @@ Scope {
             implicitWidth: Theme.barWidth
             color: "transparent"
 
+            // ── Popups (anchored to their trigger widget) ───────────────
+            CalendarPopup {
+                id: calendarPopup
+                anchorWindow: barWindow
+            }
+
+            AudioMenu {
+                id: audioMenu
+                anchorWindow: barWindow
+            }
+
+            PowerMenu {
+                id: powerMenu
+                anchorWindow: barWindow
+            }
+
+            // ── Bar background ──────────────────────────────────────────
             Rectangle {
                 id: barSurface
 
@@ -72,7 +85,7 @@ Scope {
 
                     VolumeWidget {
                         Layout.alignment: Qt.AlignHCenter
-                        screen: barWindow.screen
+                        audioMenu: audioMenu
                     }
 
                     BacklightWidget {
@@ -98,56 +111,15 @@ Scope {
 
                     ClockWidget {
                         Layout.alignment: Qt.AlignHCenter
-                        screen: barWindow.screen
+                        calendar: calendarPopup
                     }
 
                     PowerWidget {
                         Layout.alignment: Qt.AlignHCenter
-                        screen: barWindow.screen
+                        powerMenu: powerMenu
                     }
                 }
             }
-        }
-    }
-
-    // ── Popups per screen (backdrop first, so it stacks below) ─────────
-    Variants {
-        model: Quickshell.screens
-
-        PopupBackdrop {
-            required property var modelData
-            popupType: "backdrop"
-            screen: modelData
-        }
-    }
-
-    Variants {
-        model: Quickshell.screens
-
-        CalendarPopup {
-            required property var modelData
-            popupType: "calendar"
-            screen: modelData
-        }
-    }
-
-    Variants {
-        model: Quickshell.screens
-
-        AudioMenu {
-            required property var modelData
-            popupType: "audio"
-            screen: modelData
-        }
-    }
-
-    Variants {
-        model: Quickshell.screens
-
-        PowerMenu {
-            required property var modelData
-            popupType: "power"
-            screen: modelData
         }
     }
 }

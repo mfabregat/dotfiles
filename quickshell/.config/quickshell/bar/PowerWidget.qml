@@ -1,12 +1,11 @@
 // bar/PowerWidget.qml — power menu trigger.
 import QtQuick
 import qs
-import qs.services
 
 Rectangle {
     id: root
 
-    required property var screen
+    required property var powerMenu
 
     width: 30
     height: 30
@@ -25,9 +24,6 @@ Rectangle {
         id: area
         anchors.fill: parent
         hoverEnabled: true
-        onClicked: {
-            const menu = PopupRegistry.find(root.screen, "power");
-            if (menu) menu.showAt(root.mapToGlobal(0, 0).y);
-        }
+        onClicked: root.powerMenu.showAt(root)
     }
 }

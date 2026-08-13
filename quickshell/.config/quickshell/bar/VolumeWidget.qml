@@ -5,12 +5,11 @@ import Quickshell.Services.Pipewire
 import QtQuick
 import QtQuick.Layouts
 import qs
-import qs.services
 
 Rectangle {
     id: root
 
-    required property var screen
+    required property var audioMenu
 
     readonly property var node: Pipewire.defaultAudioSink
     readonly property bool hasNode: node !== null
@@ -58,10 +57,8 @@ Rectangle {
             if (root.node && root.node.audio) root.node.audio.muted = !root.node.audio.muted;
         }
         onPressed: (mouse) => {
-            if (mouse.button === Qt.RightButton) {
-                const menu = PopupRegistry.find(root.screen, "audio");
-                if (menu) menu.showAt(root.mapToGlobal(0, 0).y);
-            }
+            if (mouse.button === Qt.RightButton)
+                root.audioMenu.showAt(root);
         }
         onWheel: (wheel) => {
             if (!root.node || !root.node.audio) return;

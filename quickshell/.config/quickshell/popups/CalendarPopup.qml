@@ -1,10 +1,10 @@
-// popups/CalendarPopup.qml — month calendar popup (LayerPopup-based).
+// popups/CalendarPopup.qml — month calendar popup (native PopupWindow).
 import Quickshell
 import QtQuick
 import QtQuick.Layouts
 import qs
 
-LayerPopup {
+AnchoredPopup {
     id: root
 
     readonly property int cell: 30
@@ -16,86 +16,90 @@ LayerPopup {
     implicitWidth: 7 * cell + Theme.padding * 2
     implicitHeight: 28 + 6 * cell + Theme.padding * 2
 
-    // Header: ‹ August 2026 ›
-    RowLayout {
-        Layout.fillWidth: true
-        spacing: 4
+    PopupShell {
+        anchors.fill: parent
 
-        NavButton {
-            text: ""
-            onClicked: {
-                root.viewMonth--;
-                if (root.viewMonth < 0) { root.viewMonth = 11; root.viewYear--; }
-            }
-        }
-
-        Text {
+        // Header: ‹ August 2026 ›
+        RowLayout {
             Layout.fillWidth: true
-            horizontalAlignment: Text.AlignHCenter
-            text: Qt.formatDate(new Date(root.viewYear, root.viewMonth, 1), "MMMM yyyy")
-            color: Theme.fg
-            font.family: Theme.fontFamily
-            font.pixelSize: 12
-            font.bold: true
-        }
+            spacing: 4
 
-        NavButton {
-            text: ""
-            onClicked: {
-                root.viewMonth++;
-                if (root.viewMonth > 11) { root.viewMonth = 0; root.viewYear++; }
+            NavButton {
+                text: ""
+                onClicked: {
+                    root.viewMonth--;
+                    if (root.viewMonth < 0) { root.viewMonth = 11; root.viewYear--; }
+                }
             }
-        }
-    }
 
-    // Weekday headers
-    RowLayout {
-        Layout.fillWidth: true
-        spacing: 0
-
-        Repeater {
-            model: ["L", "M", "X", "J", "V", "S", "D"]
             Text {
-                Layout.preferredWidth: root.cell
-                Layout.preferredHeight: 14
+                Layout.fillWidth: true
                 horizontalAlignment: Text.AlignHCenter
-                text: modelData
-                color: Theme.fgDim
+                text: Qt.formatDate(new Date(root.viewYear, root.viewMonth, 1), "MMMM yyyy")
+                color: Theme.fg
                 font.family: Theme.fontFamily
-                font.pixelSize: 9
+                font.pixelSize: 12
+                font.bold: true
+            }
+
+            NavButton {
+                text: ""
+                onClicked: {
+                    root.viewMonth++;
+                    if (root.viewMonth > 11) { root.viewMonth = 0; root.viewYear++; }
+                }
             }
         }
-    }
 
-    // Day grid (Monday-first, matching the locale)
-    Grid {
-        columns: 7
-        spacing: 0
+        // Weekday headers
+        RowLayout {
+            Layout.fillWidth: true
+            spacing: 0
 
-        Repeater {
-            model: root.cells
-
-            delegate: Rectangle {
-                required property var modelData
-                readonly property int day: modelData.d
-                readonly property bool isToday: day > 0
-                    && root.viewYear === root.today.getFullYear()
-                    && root.viewMonth === root.today.getMonth()
-                    && day === root.today.getDate()
-
-                width: root.cell
-                height: root.cell
-                radius: 5
-                color: isToday ? Theme.brightYellow : "transparent"
-
+            Repeater {
+                model: ["L", "M", "X", "J", "V", "S", "D"]
                 Text {
-                    anchors.centerIn: parent
-                    visible: day > 0
-                    text: day
-                    color: isToday ? Theme.dark0 : Theme.fg
+                    Layout.preferredWidth: root.cell
+                    Layout.preferredHeight: 14
+                    horizontalAlignment: Text.AlignHCenter
+                    text: modelData
+                    color: Theme.fgDim
                     font.family: Theme.fontFamily
-                    font.pixelSize: 11
-                    font.bold: isToday
+                    font.pixelSize: 9
+                }
+            }
+        }
+
+        // Day grid (Monday-first, matching the locale)
+        Grid {
+            columns: 7
+            spacing: 0
+
+            Repeater {
+                model: root.cells
+
+                delegate: Rectangle {
+                    required property var modelData
+                    readonly property int day: modelData.d
+                    readonly property bool isToday: day > 0
+                        && root.viewYear === root.today.getFullYear()
+                        && root.viewMonth === root.today.getMonth()
+                        && day === root.today.getDate()
+
+                    width: root.cell
+                    height: root.cell
+                    radius: 5
+                    color: isToday ? Theme.brightYellow : "transparent"
+
+                    Text {
+                        anchors.centerIn: parent
+                        visible: day > 0
+                        text: day
+                        color: isToday ? Theme.dark0 : Theme.fg
+                        font.family: Theme.fontFamily
+                        font.pixelSize: 11
+                        font.bold: isToday
+                    }
                 }
             }
         }
@@ -127,6 +131,7 @@ LayerPopup {
             onClicked: btn.clicked()
         }
     }
+
 
     // Monday-first grid (week starts Monday in the locale)
     function rebuildCells(): void {

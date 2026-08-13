@@ -12,6 +12,11 @@ Rectangle {
     border.color: Theme.dark2
     border.width: 1
 
+    // Rectangles don't derive implicit size from children — expose the
+    // content column's so popups can size themselves.
+    implicitWidth: contentCol.implicitWidth + Theme.padding * 2
+    implicitHeight: contentCol.implicitHeight + Theme.padding * 2
+
     Column {
         id: contentCol
         anchors.fill: parent
