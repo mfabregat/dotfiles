@@ -40,18 +40,10 @@ Rectangle {
 
     readonly property real titleLen: root.titleNatural + root.artistNatural <= root.availableLen
         ? root.titleNatural
-        : Math.min(Math.max(root.minTitleLen,
-                            Math.min(root.titleNatural, root.availableLen - root.artistNatural)),
-                   root.availableLen)
+        : Math.min(root.titleNatural, root.availableLen - root.artistNatural)
     readonly property real artistLen: root.titleNatural + root.artistNatural <= root.availableLen
         ? root.artistNatural
-        : // shrink the artist after the title, down to minArtistLen;
-          // on extreme pressure (minTitle+minArtist > space) the artist
-          // yields its floor so the widget never overflows
-          Math.min(
-              Math.max(root.minArtistLen,
-                       Math.min(root.artistNatural, root.availableLen - root.titleLen)),
-              Math.max(0, root.availableLen - root.titleLen))
+        : Math.max(0, Math.min(root.artistNatural, root.availableLen - root.titleLen))
 
     width: Theme.widgetWidth
     // Sized by the layout to exactly this (no fill, no loop)
