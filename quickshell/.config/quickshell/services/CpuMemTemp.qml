@@ -1,5 +1,6 @@
-// services/CpuMemTemp.qml — CPU %, memory % and CPU temperature poller.
-// Reads /proc/stat, /proc/meminfo and the first hwmon temp sensor every second.
+// services/CpuMemTemp.qml — CPU (total + per-core) %, memory %, hottest
+// temperature, and short histories. One small process per second; the
+// values feed both the bar glyphs and the details popup.
 pragma Singleton
 
 import Quickshell
@@ -12,10 +13,14 @@ Singleton {
     property real cpu: 0
     property real mem: 0
     property real temp: 0
+    property var cores: []          // per-core usage %
+    property var cpuHistory: []     // last samples (sparkline)
+    property var memHistory: []
+    property string cpuName: ""     // read once at startup
     property bool available: false
 
-    property int prevTotal: 0
-    property int prevIdle: 0
+    readonly property int historyLen: 40
+    property var prevStats: ({})
 
     // ── Polling ────────────────────────────────────────────────────────
     Process {
@@ -23,12 +28,25 @@ Singleton {
 
         command: [
             "sh", "-c",
-            "head -1 /proc/stat; awk '/MemTotal|MemAvailable/ {print $2}' /proc/meminfo; cat /sys/class/hwmon/hwmon1/temp1_input 2>/dev/null || echo 0"
+            "grep '^cpu' /proc/stat; awk '/MemTotal|MemAvailable/ {print $2}' /proc/meminfo;"
+            + " for f in /sys/class/hwmon/hwmon*/temp*_input; do cat \"$f\"; done | sort -n | tail -1"
         ]
         running: true
 
         stdout: StdioCollector {
             onStreamFinished: root.parse(this.text)
+        }
+    }
+
+    // CPU model name, once (for the details popup header)
+    Process {
+        id: nameProc
+
+        command: ["sh", "-c", "grep -m1 'model name' /proc/cpuinfo | sed 's/.*: //; s/  */ /g'"]
+        running: false
+
+        stdout: StdioCollector {
+            onStreamFinished: root.cpuName = this.text.trim()
         }
     }
 
@@ -50,36 +68,61 @@ Singleton {
         onTriggered: pollProc.running = true
     }
 
-    Component.onCompleted: checker.running = true
+    Component.onCompleted: {
+        checker.running = true;
+        nameProc.running = true;
+    }
 
     // ── Parsing ────────────────────────────────────────────────────────
-    // Output lines: [0] cpu line, [1] MemTotal kB, [2] MemAvailable kB, [3] temp millideg
+    // Output: "cpu ..." + "cpuN ..." lines, then MemTotal/MemAvailable,
+    // then the hottest hwmon temperature (millidegrees).
     function parse(text: string): void {
         const lines = text.trim().split("\n");
-        if (lines.length < 4) return;
+        const nums = [];
+        const coreList = [];
 
-        // CPU: "cpu  user nice system idle iowait irq softirq steal guest guest_nice"
-        const cpuParts = lines[0].trim().split(/\s+/);
-        if (cpuParts.length < 5 || cpuParts[0] !== "cpu") return;
+        for (const line of lines) {
+            const trimmed = line.trim();
+            if (trimmed.startsWith("cpu")) {
+                const parts = trimmed.split(/\s+/);
+                if (parts.length < 5) continue;
+                let total = 0;
+                for (let i = 1; i < parts.length; i++) total += parseInt(parts[i]) || 0;
+                const idle = (parseInt(parts[4]) || 0) + (parseInt(parts[5]) || 0);
 
-        let total = 0;
-        for (let i = 1; i < cpuParts.length; i++) total += parseInt(cpuParts[i]) || 0;
-        const idle = (parseInt(cpuParts[4]) || 0) + (parseInt(cpuParts[5]) || 0);
+                const prev = root.prevStats[parts[0]] || { t: 0, i: 0 };
+                let pct = 0;
+                if (prev.t > 0 && total > prev.t) {
+                    pct = Math.min(100, Math.max(0, (1 - (idle - prev.i) / (total - prev.t)) * 100));
+                }
+                root.prevStats[parts[0]] = { t: total, i: idle };
 
-        if (root.prevTotal > 0 && total > root.prevTotal) {
-            const dTotal = total - root.prevTotal;
-            const dIdle = idle - root.prevIdle;
-            root.cpu = Math.min(100, Math.max(0, (1 - dIdle / dTotal) * 100));
+                if (parts[0] === "cpu") root.cpu = pct;
+                else coreList.push(pct);
+            } else if (/^\d+$/.test(trimmed)) {
+                nums.push(parseInt(trimmed) || 0);
+            }
         }
-        root.prevTotal = total;
-        root.prevIdle = idle;
 
-        // Memory (kB): one value per line
-        const memTotal = parseInt(lines[1]) || 0;
-        const memAvail = parseInt(lines[2]) || 0;
-        if (memTotal > 0) root.mem = Math.min(100, Math.max(0, (1 - memAvail / memTotal) * 100));
+        root.cores = coreList;
+        if (nums.length >= 3) {
+            const memTotal = nums[0];
+            const memAvail = nums[1];
+            if (memTotal > 0) {
+                root.mem = Math.min(100, Math.max(0, (1 - memAvail / memTotal) * 100));
+            }
+            root.temp = nums[2] / 1000;
+        }
 
-        // Temperature (millidegrees)
-        root.temp = (parseInt(lines[3].trim()) || 0) / 1000;
+        // History (sparklines): keep the last `historyLen` samples
+        root.cpuHistory = pushHistory(root.cpuHistory, root.cpu);
+        root.memHistory = pushHistory(root.memHistory, root.mem);
+    }
+
+    function pushHistory(hist: var, value: real): var {
+        const h = hist ? hist.slice() : [];
+        h.push(value);
+        if (h.length > root.historyLen) h.shift();
+        return h;
     }
 }

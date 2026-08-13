@@ -118,7 +118,7 @@ Rectangle {
                 text: root.player ? root.player.trackArtist || "" : ""
                 color: root.playing ? Theme.bg : Theme.fgDim
                 font.family: Theme.fontFamily
-                font.pixelSize: Theme.fontSizeTiny
+                font.pixelSize: Theme.fontSize
                 Behavior on color { ColorAnimation { duration: 150 } }
             }
         }
