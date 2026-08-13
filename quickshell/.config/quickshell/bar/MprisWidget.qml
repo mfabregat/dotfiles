@@ -21,12 +21,16 @@ Rectangle {
     readonly property bool hasPlayer: player !== null
     readonly property bool playing: player !== null && player.isPlaying
 
-    readonly property int titleLen: 100 // reading length of the title strip
-    readonly property int artistLen: 55 // reading length of the artist strip
+    // Strip lengths follow the actual text, clamped to these maximums
+    // (longer tracks are elided). Reactive: short track -> compact widget.
+    readonly property int maxTitleLen: 140
+    readonly property int maxArtistLen: 80
+    readonly property real titleLen: Math.min(titleText.implicitWidth, maxTitleLen)
+    readonly property real artistLen: Math.min(artistText.implicitWidth, maxArtistLen)
 
     width: 30
     // iconText.implicitHeight: the glyph's real line height (font 15 -> 21)
-    height: 6 + iconText.implicitHeight + 3 + titleLen + 3 + artistLen
+    height: 6 + iconText.implicitHeight + 3 + root.titleLen + 3 + root.artistLen
     visible: hasPlayer
     radius: 7
     color: playing ? Theme.accent
@@ -74,7 +78,7 @@ Rectangle {
                 width: root.titleLen
                 height: 17
                 x: 21 // visual strip spans [4, 21] (centered in the 24px content)
-                y: 0
+                y: 0 // title strip starts at the top of the strips area
                 elide: Text.ElideRight
                 text: root.player ? root.player.trackTitle || "" : ""
                 color: root.playing ? Theme.bg : Theme.fg
@@ -90,7 +94,7 @@ Rectangle {
                 width: root.artistLen
                 height: 14
                 x: 19 // visual strip spans [5, 19]
-                y: root.titleLen + 3
+                y: root.titleLen + 3 // follows the title length
                 elide: Text.ElideRight
                 text: root.player ? root.player.trackArtist || "" : ""
                 color: root.playing ? Theme.bg : Theme.fgDim
