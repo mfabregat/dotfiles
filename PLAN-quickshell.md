@@ -161,3 +161,40 @@ Key mechanics:
   `Quickshell.screens` map on fresh launch. Bars/popups will all follow
   the Variants-per-screen pattern.
 - QS_NO_RELOAD_POPUP=1 set via pragma (no toast on every reload).
+
+## Phase 2 log (2026-08-13, done)
+
+Full right bar live: desk pills, taskbar, mpris, cpu/mem/temp, volume,
+backlight, network, layout, tray, battery, clock, power + calendar/audio/
+power popups with backdrop dismissal. Waybar fully retired.
+
+Landmines found and worked around (all documented in code comments):
+
+1. **ObjectModel has `.values`, not `.length`** — all model iteration uses
+   `.values` (reactive).
+2. **Function calls in QML bindings are never tracked** — `property var x:
+   lookup()` evaluates once. Fix: pass a tracked property as an argument
+   (`lookup(SomeModel.values)`).
+3. **sway 1.12 `get_workspaces` no longer includes node trees** — taskbar
+   parses `swaymsg -t get_tree` instead.
+4. **DesktopEntries scan is async** (queued completion after first access)
+   — icon lookups track `DesktopEntries.applications.values`.
+5. **PopupWindow is broken on wlr-layer-shell in 0.3.0** (known bug:
+   layer surface + xdg_popup attach → "popup is not an xdg_popup").
+   Replaced with custom `LayerPopup` (PanelWindow + margins) + a fullscreen
+   `PopupBackdrop` click-catcher. Popup dismissal via backdrop.
+6. **Only file-root windows and Variants delegates map in 0.3.0** — direct
+   children (even of PanelWindows) never map. All popups are per-screen
+   Variants delegates registered in `PopupRegistry` (widgets look up the
+   popup for their screen at click time).
+7. **Lazy window creation races** (nondeterministic mapping) — popups are
+   created eagerly (always mapped, parked off-screen via `topMargin:
+   -10000`); showAt just repositions. Verified PanelWindows resize
+   reactively from implicitWidth/implicitHeight.
+8. Inline components can't see property aliases or root props — use
+   `parent.width` or plain properties.
+
+Remaining: exit-confirm uses the power menu (swaynag removed). Note: the
+audio menu now lists hardware sinks from Pipewire (old audio_menu.sh is
+gone). gammastep-indicator is dead (no tray app); night-light toggle comes
+in phase 7.
