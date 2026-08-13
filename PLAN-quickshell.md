@@ -175,22 +175,38 @@ Landmines found and worked around (all documented in code comments):
 2. **Function calls in QML bindings are never tracked** — `property var x:
    lookup()` evaluates once. Fix: pass a tracked property as an argument
    (`lookup(SomeModel.values)`).
-3. **sway 1.12 `get_workspaces` no longer includes node trees** — taskbar
-   parses `swaymsg -t get_tree` instead.
+3. **sway `get_workspaces` has no node trees** — the taskbar originally
+   parsed `swaymsg -t get_tree` for windows; that was later replaced by
+   the native `ToplevelManager` (wlr-foreign-toplevel, see Taskbar.qml —
+   no swaymsg subprocesses). Workspaces themselves come from
+   `Quickshell.I3` (desk pills).
 4. **DesktopEntries scan is async** (queued completion after first access)
    — icon lookups track `DesktopEntries.applications.values`.
-5. **PopupWindow is broken on wlr-layer-shell in 0.3.0** (known bug:
-   layer surface + xdg_popup attach → "popup is not an xdg_popup").
-   Replaced with custom `LayerPopup` (PanelWindow + margins) + a fullscreen
-   `PopupBackdrop` click-catcher. Popup dismissal via backdrop.
-6. **Only file-root windows and Variants delegates map in 0.3.0** — direct
-   children (even of PanelWindows) never map. All popups are per-screen
-   Variants delegates registered in `PopupRegistry` (widgets look up the
-   popup for their screen at click time).
-7. **Lazy window creation races** (nondeterministic mapping) — popups are
-   created eagerly (always mapped, parked off-screen via `topMargin:
-   -10000`); showAt just repositions. Verified PanelWindows resize
-   reactively from implicitWidth/implicitHeight.
+5. **PopupWindow works on wlr-layer-shell — xdg_popup GRAB needs input
+   first** (audited 2026-08-13, see below): a PopupWindow anchored to a
+   PanelWindow attaches cleanly as an xdg_popup child of the layer
+   surface. The earlier "popup is not an xdg_popup" failure only happens
+   for the *grabbing* variant: with `grabFocus: true` and no prior input
+   on the parent, Qt can't create a grabbing popup ("Failed to create
+   grabbing popup… parent window has received input" — the xdg-shell
+   grab needs an input serial) and quickshell's fallback warning fires.
+   Popups opened by real clicks (the norm) get that serial and attach
+   fine. Dismissal is app-side via `PopupManager` (single-popup-at-a-
+   time, toggle, hover-popup close), complementing the native grab.
+   Note: the old "LayerPopup + PopupBackdrop" design described below is
+   gone — AnchoredPopup *is* a PopupWindow.
+6. **Only layer-surface windows (PanelWindow) map as file-root or
+   Variants delegates** — xdg_popup windows (PopupWindow) map fine as
+   direct children (the calendar/audio/power popups are direct children
+   of the bar PanelWindow and work). A PanelWindow child does not map as
+   its own surface — that's why the bars and the launcher are Variants
+   delegates on `Quickshell.screens`.
+7. **Create windows eagerly, toggle visibility** — popups are declared
+   in the bar scene from the start (no lazy creation) and shown via
+   `showAt` (visible: true) / `hide` (visible: false). Lazy window
+   creation races are real (nondeterministic mapping); eager creation
+   sidesteps them. PanelWindows resize reactively from
+   implicitWidth/implicitHeight.
 8. Inline components can't see property aliases or root props — use
    `parent.width` or plain properties.
 
@@ -239,3 +255,28 @@ Esc / click-outside closes. Rofi retired.
 - Note: fixed two pre-existing WIP errors that blocked the whole shell from
   loading — duplicate `onPressed` handlers on MprisWidget's and Taskbar's
   MouseAreas (merged; MprisWidget kept its left-click togglePlaying).
+
+## Landmine audit (2026-08-13)
+
+The user challenged landmine 5 ("PopupWindow is broken on wlr-layer-shell").
+Verified empirically with throwaway configs (`quickshell -p /tmp/qstestN`,
+separate instances, live sway 1.12) — the plan entries above were corrected
+in place:
+
+- **xdg_popup attach to a layer surface works.** Test A: PopupWindow
+  anchored to a PanelWindow, `visible` from startup, no grab → clean attach
+  (only deprecation warnings). Test B: `grabFocus: true` → Qt fails first
+  ("Failed to create grabbing popup… parent window has received input"),
+  then quickshell's fallback warns "the popup is not an xdg_popup" and the
+  popup does not attach. Test C: popup created hidden with grabFocus, shown
+  later, still no input → same failure. Test D: hidden, shown later, no
+  grab → clean.
+- **Root cause is xdg-shell grab semantics, not a layer-shell bug**: a
+  grabbing xdg_popup needs an input serial from the parent window. Real
+  clicks (the opening click on a bar widget) provide it. Confirmed
+  indirectly: the live shell's qslog has zero xdg_popup warnings while the
+  click-opened popups demonstrably render.
+- **Two other plan entries described code that no longer exists**: the
+  taskbar uses the native ToplevelManager (not get_tree parsing), and
+  AnchoredPopup is a PopupWindow (not the old LayerPopup/PopupBackdrop).
+  Corrected entries 3, 5, 6, 7 accordingly.
