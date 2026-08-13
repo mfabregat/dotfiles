@@ -10,6 +10,7 @@
 // binding re-evaluates — and the positioner is re-sent — when they do.
 import Quickshell
 import QtQuick
+import qs.services
 
 PopupWindow {
     id: root
@@ -44,6 +45,8 @@ PopupWindow {
     anchor.rect.width: 1
     anchor.rect.height: 1
 
+    Component.onCompleted: PopupController.registerPopup(root.anchorWindow.screen, root)
+
     /// Open the popup anchored to the given widget (must live in the bar window).
     function showAt(item: var): void {
         const p = item.mapToItem(root.anchorWindow.contentItem, 0, 0);
@@ -51,5 +54,12 @@ PopupWindow {
         root.itemCenterY = p.y + item.height / 2;
         root.anchorItem = item;
         root.visible = true;
+        PopupController.openPopup(root.anchorWindow.screen, root);
+    }
+
+    /// Close the popup and its backdrop.
+    function hide(): void {
+        root.visible = false;
+        PopupController.dismiss(root.anchorWindow.screen);
     }
 }

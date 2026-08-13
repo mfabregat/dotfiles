@@ -52,9 +52,11 @@ Rectangle {
         id: area
         anchors.fill: parent
         hoverEnabled: true
+        acceptedButtons: Qt.LeftButton | Qt.RightButton // right = device menu
 
-        onClicked: {
-            if (root.node && root.node.audio) root.node.audio.muted = !root.node.audio.muted;
+        onClicked: (mouse) => {
+            if (mouse.button === Qt.LeftButton && root.node && root.node.audio)
+                root.node.audio.muted = !root.node.audio.muted;
         }
         onPressed: (mouse) => {
             if (mouse.button === Qt.RightButton)

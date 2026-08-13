@@ -58,12 +58,15 @@ Item {
                     id: itemArea
                     anchors.fill: parent
                     hoverEnabled: true
+                    acceptedButtons: Qt.LeftButton | Qt.RightButton
 
-                    onClicked: {
-                        if (modelData.onlyMenu || !canActivate)
-                            modelData.display(root.barWindow, width / 2, height / 2);
-                        else
-                            modelData.activate();
+                    onClicked: (mouse) => {
+                        if (mouse.button === Qt.LeftButton) {
+                            if (modelData.onlyMenu || !canActivate)
+                                modelData.display(root.barWindow, width / 2, height / 2);
+                            else
+                                modelData.activate();
+                        }
                     }
                     onPressed: (mouse) => {
                         if (mouse.button === Qt.RightButton)
