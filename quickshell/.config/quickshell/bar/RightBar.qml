@@ -67,7 +67,6 @@ Scope {
 
                     Taskbar {
                         Layout.alignment: Qt.AlignHCenter
-                        screen: barWindow.screen
                     }
 
                     Item {

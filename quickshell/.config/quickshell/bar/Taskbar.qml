@@ -1,8 +1,7 @@
-// bar/Taskbar.qml — open windows on this monitor, from the native
+// bar/Taskbar.qml — all open windows across every output, from the native
 // wlr-foreign-toplevel protocol (no swaymsg subprocesses).
 // Click: activate · middle click: close (protocol requests).
 import Quickshell
-import Quickshell.I3
 import Quickshell.Wayland
 import QtQuick
 import QtQuick.Layouts
@@ -11,10 +10,6 @@ import qs
 Column {
     id: root
 
-    required property var screen
-    // Same tracked lookup as Workspaces.qml (see comment there)
-    readonly property var monitor: I3.monitors.values.length ? I3.monitorFor(screen) : null
-
     spacing: 2
 
     Repeater {
@@ -22,10 +17,6 @@ Column {
 
         delegate: Rectangle {
             required property var modelData
-            // Toplevel.screens are ShellScreens; compare by name with the
-            // bar's I3Monitor (different types — object identity never matches)
-            readonly property bool mine: root.monitor !== null
-                && modelData.screens.map(s => s.name).includes(root.monitor.name)
 
             // Resolve the real icon name via the app's desktop entry.
             // The applications list is passed in so the binding re-evaluates
@@ -43,8 +34,7 @@ Column {
             }
 
             width: 28
-            height: mine ? 28 : 0
-            visible: mine
+            height: 28
             radius: 6
             color: area.containsMouse ? Theme.bgHover
                  : modelData.activated ? Theme.dark1
@@ -55,14 +45,14 @@ Column {
                 anchors.centerIn: parent
                 width: 16
                 height: 16
-                source: mine ? "image://icon/" + iconName : ""
+                source: "image://icon/" + iconName
                 sourceSize { width: 16; height: 16 }
                 visible: status === Image.Ready
             }
 
             Text {
                 anchors.centerIn: parent
-                visible: !icon.visible && mine
+                visible: !icon.visible
                 text: modelData.appId ? modelData.appId.charAt(0).toUpperCase() : "?"
                 color: modelData.activated ? Theme.fg : Theme.fgDim
                 font.family: Theme.fontFamily
@@ -74,7 +64,6 @@ Column {
                 id: area
                 anchors.fill: parent
                 hoverEnabled: true
-                visible: mine
                 acceptedButtons: Qt.LeftButton | Qt.MiddleButton
 
                 onClicked: (mouse) => {
