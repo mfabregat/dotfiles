@@ -59,12 +59,21 @@ Scope {
                     anchors.margins: 4
                     spacing: Theme.spacing
 
-                    // Top: desks + windows
+                    // Top: desks + now playing
                     Workspaces {
                         Layout.alignment: Qt.AlignHCenter
                         screen: barWindow.screen
                     }
 
+                    MprisWidget {
+                        Layout.alignment: Qt.AlignHCenter
+                    }
+
+                    Item {
+                        Layout.fillHeight: true
+                    }
+
+                    // Center: all windows (taskbar)
                     Taskbar {
                         Layout.alignment: Qt.AlignHCenter
                     }
@@ -73,11 +82,7 @@ Scope {
                         Layout.fillHeight: true
                     }
 
-                    // Bottom: media + system + clock + power
-                    MprisWidget {
-                        Layout.alignment: Qt.AlignHCenter
-                    }
-
+                    // Bottom: system + clock + power
                     CpuMemWidget {
                         Layout.alignment: Qt.AlignHCenter
                     }
