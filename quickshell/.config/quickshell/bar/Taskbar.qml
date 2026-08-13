@@ -22,7 +22,10 @@ Column {
 
         delegate: Rectangle {
             required property var modelData
-            readonly property bool mine: modelData.screens.includes(root.monitor)
+            // Toplevel.screens are ShellScreens; compare by name with the
+            // bar's I3Monitor (different types — object identity never matches)
+            readonly property bool mine: root.monitor !== null
+                && modelData.screens.map(s => s.name).includes(root.monitor.name)
 
             // Resolve the real icon name via the app's desktop entry.
             // The applications list is passed in so the binding re-evaluates
