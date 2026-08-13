@@ -85,7 +85,7 @@ Scope {
                     // mpris freeSpace can use its total height)
                     Column {
                         id: bottomGroup
-                        width: 30
+                        width: Theme.widgetWidth
                         spacing: Theme.spacing
                         Layout.alignment: Qt.AlignHCenter
 
