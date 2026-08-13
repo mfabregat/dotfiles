@@ -1,3 +1,5 @@
+// Platform menus (tray) require QApplication mode
+//@ pragma UseQApplication
 //@ pragma DefaultEnv QS_NO_RELOAD_POPUP=1
 
 // shell.qml — quickshell entry point.

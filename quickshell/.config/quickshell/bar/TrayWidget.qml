@@ -60,17 +60,20 @@ Item {
                     hoverEnabled: true
                     acceptedButtons: Qt.LeftButton | Qt.RightButton
 
+                    function showMenu(): void {
+                        // position is relative to the bar window
+                        const pos = root.mapToItem(root.barWindow.contentItem, 0, 0);
+                        modelData.display(root.barWindow, pos.x + width / 2, pos.y + height / 2);
+                    }
+
                     onClicked: (mouse) => {
                         if (mouse.button === Qt.LeftButton) {
-                            if (modelData.onlyMenu || !canActivate)
-                                modelData.display(root.barWindow, width / 2, height / 2);
-                            else
-                                modelData.activate();
+                            if (modelData.onlyMenu || !canActivate) showMenu();
+                            else modelData.activate();
                         }
                     }
                     onPressed: (mouse) => {
-                        if (mouse.button === Qt.RightButton)
-                            modelData.display(root.barWindow, width / 2, height / 2);
+                        if (mouse.button === Qt.RightButton) showMenu();
                     }
                 }
             }

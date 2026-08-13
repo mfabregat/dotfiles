@@ -71,7 +71,10 @@ AnchoredPopup {
                     id: rowArea
                     anchors.fill: parent
                     hoverEnabled: true
-                    onClicked: Pipewire.preferredDefaultAudioSink = modelData
+                    onClicked: {
+                        Pipewire.preferredDefaultAudioSink = modelData;
+                        root.hide(); // apply and close
+                    }
                 }
             }
         }
