@@ -17,7 +17,7 @@ Rectangle {
     readonly property bool muted: node && node.audio ? node.audio.muted : false
 
     width: Theme.widgetWidth
-    height: 30
+    height: 60
     radius: 7
     color: area.containsMouse ? Theme.bgHover : "transparent"
 
@@ -29,7 +29,7 @@ Rectangle {
     ColumnLayout {
         anchors.fill: parent
         anchors.margins: 2
-        spacing: 0
+        spacing: 2
 
         Text {
             Layout.alignment: Qt.AlignHCenter
@@ -39,12 +39,27 @@ Rectangle {
             font.pixelSize: Theme.fontSizeLarge
         }
 
-        Text {
+        // Vertical volume bar (fill rises with the level)
+        // Vertical volume bar (fill rises with the level)
+        Item {
             Layout.alignment: Qt.AlignHCenter
-            text: root.hasNode ? Math.round(root.volume * 100) + "%" : ""
-            color: Theme.fgDim
-            font.family: Theme.fontFamily
-            font.pixelSize: Theme.fontSizeTiny
+            Layout.fillHeight: true
+            width: 6
+
+            Rectangle {
+                anchors.fill: parent
+                radius: 3
+                color: Theme.dark2
+            }
+
+            Rectangle {
+                width: parent.width
+                height: parent.height * root.volume
+                radius: 3
+                color: root.muted ? Theme.urgent
+                     : root.volume > 0.5 ? Theme.fg : Theme.fgDim
+                anchors.bottom: parent.bottom
+            }
         }
     }
 
@@ -68,4 +83,5 @@ Rectangle {
             root.node.audio.volume = Math.min(1, Math.max(0, root.volume + step));
         }
     }
+
 }
