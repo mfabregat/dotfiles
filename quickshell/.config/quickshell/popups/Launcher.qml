@@ -38,10 +38,6 @@ PanelWindow {
     /// Currently selected entry (object identity — delegates get no `index`
     /// in this quickshell/Qt combo, so selection is tracked by object).
     property var selectedEntry: null
-    /// First visible row (0-based) of the 8-row window.
-    property int scrollOffset: 0
-    /// The rows actually rendered (window slice).
-    property var visibleResults: root.results.slice(root.scrollOffset, root.scrollOffset + 8)
 
     function launchSelected(): void {
         if (!root.selectedEntry) return;
@@ -49,20 +45,22 @@ PanelWindow {
         LauncherState.open = false;
     }
 
-    /// Move the selection by `delta` rows, scrolling the window as needed.
+    /// Move the selection by `delta` rows (clamped). The results ListView
+    /// follows via the currentIndex binding + highlightFollowsCurrentItem.
     function moveSelection(delta: int): void {
         if (root.results.length === 0) return;
-        let pos = root.selectedIndex();
+        let pos = root.selectedIndex(root.results, root.selectedEntry);
         if (pos < 0) pos = 0;
         pos = Math.max(0, Math.min(pos + delta, root.results.length - 1));
         root.selectedEntry = root.results[pos].entry;
-        if (pos < root.scrollOffset) root.scrollOffset = pos;
-        else if (pos >= root.scrollOffset + 8) root.scrollOffset = pos - 7;
     }
 
-    function selectedIndex(): int {
-        for (let i = 0; i < root.results.length; i++)
-            if (root.results[i].entry === root.selectedEntry) return i;
+    /// Position of `entry` in `results`, or -1. Both args are tracked
+    /// properties — landmine 2: a bare function call in a binding would
+    /// evaluate once, so the tracked args keep it reactive.
+    function selectedIndex(results: var, entry: var): int {
+        for (let i = 0; i < results.length; i++)
+            if (results[i].entry === entry) return i;
         return -1;
     }
 
@@ -72,7 +70,6 @@ PanelWindow {
         if (root.visible) {
             searchInput.text = "";
             root.selectedEntry = root.results.length ? root.results[0].entry : null;
-            root.scrollOffset = 0;
             Qt.callLater(() => searchInput.forceActiveFocus());
         }
     }
@@ -80,7 +77,6 @@ PanelWindow {
     // Results rebuilt (every keystroke): selection returns to the top.
     onResultsChanged: {
         root.selectedEntry = root.results.length ? root.results[0].entry : null;
-        root.scrollOffset = 0;
     }
 
     // ── Backdrop + centered card ──────────────────────────────
@@ -154,76 +150,78 @@ PanelWindow {
             }
         }
 
-        // Results — at most 8 visible rows; the card shrinks with fewer.
-        // (Repeater + Column is the codebase pattern; ListView delegates
-        // don't receive `index` in this quickshell/Qt combination.)
-        Column {
-            id: listCol
+        // Results — at most 8 rows visible; the card shrinks with fewer.
+        // Native ListView: lazily instantiates rows, wheel-scrolls, and
+        // follows the selection (currentIndex binding + highlight). Delegate
+        // `index` is unavailable in this quickshell/Qt combo, so highlight
+        // and hover work by entry object identity instead.
+        ListView {
+            id: resultsList
             width: parent.width
             height: Math.min(root.results.length, 8) * Theme.popupRowHeight
-            spacing: 0
+            model: root.results
+            currentIndex: root.selectedIndex(root.results, root.selectedEntry)
+            clip: true
+            highlightFollowsCurrentItem: true
+            boundsBehavior: Flickable.StopAtBounds
 
-            Repeater {
-                model: root.visibleResults
+            delegate: Rectangle {
+                required property var modelData
+                readonly property var entry: modelData.entry
+                readonly property bool selected: entry === root.selectedEntry
 
-                delegate: Rectangle {
-                    required property var modelData
-                    readonly property var entry: modelData.entry
-                    readonly property bool selected: entry === root.selectedEntry
+                width: resultsList.width
+                height: Theme.popupRowHeight
+                radius: Theme.radius
+                color: selected ? Theme.accent : "transparent"
+                Behavior on color { ColorAnimation { duration: 150 } }
 
-                    width: listCol.width
-                    height: Theme.popupRowHeight
-                    radius: Theme.radius
-                    color: selected ? Theme.accent : "transparent"
+                Image {
+                    id: rowIcon
+                    anchors.left: parent.left
+                    anchors.leftMargin: 6
+                    anchors.verticalCenter: parent.verticalCenter
+                    width: 20
+                    height: 20
+                    source: "image://icon/" + (entry.icon || "")
+                    sourceSize { width: 20; height: 20 }
+                    visible: status === Image.Ready
+                }
+
+                Text {
+                    anchors.left: parent.left
+                    anchors.leftMargin: 34
+                    anchors.right: genericText.left
+                    anchors.rightMargin: 8
+                    anchors.verticalCenter: parent.verticalCenter
+                    text: entry.name
+                    color: selected ? Theme.dark0 : Theme.fg
+                    elide: Text.ElideRight
+                    font.family: Theme.fontFamily
+                    font.pixelSize: Theme.fontSize
                     Behavior on color { ColorAnimation { duration: 150 } }
+                }
 
-                    Image {
-                        id: rowIcon
-                        anchors.left: parent.left
-                        anchors.leftMargin: 6
-                        anchors.verticalCenter: parent.verticalCenter
-                        width: 20
-                        height: 20
-                        source: "image://icon/" + (entry.icon || "")
-                        sourceSize { width: 20; height: 20 }
-                        visible: status === Image.Ready
-                    }
+                Text {
+                    id: genericText
+                    anchors.right: parent.right
+                    anchors.rightMargin: 8
+                    anchors.verticalCenter: parent.verticalCenter
+                    text: entry.genericName
+                    color: selected ? Theme.dark0 : Theme.fgDim
+                    elide: Text.ElideRight
+                    font.family: Theme.fontFamily
+                    font.pixelSize: Theme.fontSizeSmall
+                    Behavior on color { ColorAnimation { duration: 150 } }
+                }
 
-                    Text {
-                        anchors.left: parent.left
-                        anchors.leftMargin: 34
-                        anchors.right: genericText.left
-                        anchors.rightMargin: 8
-                        anchors.verticalCenter: parent.verticalCenter
-                        text: entry.name
-                        color: selected ? Theme.dark0 : Theme.fg
-                        elide: Text.ElideRight
-                        font.family: Theme.fontFamily
-                        font.pixelSize: Theme.fontSize
-                        Behavior on color { ColorAnimation { duration: 150 } }
-                    }
-
-                    Text {
-                        id: genericText
-                        anchors.right: parent.right
-                        anchors.rightMargin: 8
-                        anchors.verticalCenter: parent.verticalCenter
-                        text: entry.genericName
-                        color: selected ? Theme.dark0 : Theme.fgDim
-                        elide: Text.ElideRight
-                        font.family: Theme.fontFamily
-                        font.pixelSize: Theme.fontSizeSmall
-                        Behavior on color { ColorAnimation { duration: 150 } }
-                    }
-
-                    MouseArea {
-                        anchors.fill: parent
-                        hoverEnabled: true
-                        onEntered: root.selectedEntry = entry
-                        onClicked: {
-                            root.selectedEntry = entry;
-                            root.launchSelected();
-                        }
+                MouseArea {
+                    anchors.fill: parent
+                    hoverEnabled: true
+                    onEntered: root.selectedEntry = entry
+                    onClicked: {
+                        root.selectedEntry = entry;
+                        root.launchSelected();
                     }
                 }
             }
