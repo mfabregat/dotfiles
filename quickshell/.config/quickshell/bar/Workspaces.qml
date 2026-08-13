@@ -38,8 +38,8 @@ Column {
                 text: modelData.number
                 color: focused || (modelData.urgent && mine) ? Theme.dark0 : Theme.fgDim
                 font.family: Theme.fontFamily
-                font.pixelSize: Theme.fontSizeSmall
-                font.bold: focused
+                font.pixelSize: Theme.fontSize
+                font.bold: true
             }
 
             MouseArea {

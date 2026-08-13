@@ -84,7 +84,10 @@ Rectangle {
         }
 
         // Strips area: title strip on top, artist strip below it, both
-        // reading top-to-bottom (rotation 90). Manual positions — see note.
+        // reading top-to-bottom (rotation 90). Both strips center
+        // automatically: a TopLeft-rotated text's visual strip spans
+        // [x-height, x], so x = (parent.width + height) / 2 centers it
+        // with no explicit dimensions (strip width = the font line height).
         Item {
             id: stripsItem
             Layout.fillWidth: true
@@ -95,8 +98,7 @@ Rectangle {
                 rotation: 90
                 transformOrigin: Item.TopLeft // rotate around the origin, not the center
                 width: root.titleLen
-                height: Theme.titleStrip
-                x: 16 // visual strip centered (titleStrip 13 in a 22px widget)
+                x: Math.round((parent.width + height) / 2)
                 y: 0
                 elide: Text.ElideRight
                 text: root.player ? root.player.trackTitle || "" : ""
@@ -111,14 +113,13 @@ Rectangle {
                 rotation: 90
                 transformOrigin: Item.TopLeft // rotate around the origin, not the center
                 width: root.artistLen
-                height: Theme.artistStrip
-                x: 15 // visual strip centered (artistStrip 11)
+                x: Math.round((parent.width + height) / 2)
                 y: root.titleLen + 2 // follows the title length
                 elide: Text.ElideRight
                 text: root.player ? root.player.trackArtist || "" : ""
                 color: root.playing ? Theme.bg : Theme.fgDim
                 font.family: Theme.fontFamily
-                font.pixelSize: Theme.fontSize
+                font.pixelSize: Theme.fontSizeSmall
                 Behavior on color { ColorAnimation { duration: 150 } }
             }
         }

@@ -68,10 +68,6 @@ Singleton {
 
     // ── Typography & icons (three sizes only) ─────────────────────────
     readonly property int fontSizeSmall: 8   // small labels (percentages, artist)
-    readonly property int fontSize: 12        // general text (track title, menus)
+    readonly property int fontSize: 14        // general text (track title, menus)
     readonly property int fontSizeGlyphs: 16 // icons and status glyphs
-
-    // ── Mpris strips (rotated title/artist lines) ────────────────────
-    readonly property int titleStrip: 13  // visual width of the title line
-    readonly property int artistStrip: 11 // visual width of the artist line
 }
