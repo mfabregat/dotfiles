@@ -1,0 +1,56 @@
+// bar/ClockWidget.qml — HH:MM clock; click opens the calendar popup.
+import Quickshell
+import QtQuick
+import QtQuick.Layouts
+import qs
+import qs.services
+
+Rectangle {
+    id: root
+
+    required property var screen
+
+    width: 30
+    height: 40
+    radius: 7
+    color: area.containsMouse ? Theme.bgHover : "transparent"
+
+    SystemClock {
+        id: clock
+        precision: SystemClock.Minutes
+    }
+
+    ColumnLayout {
+        anchors.fill: parent
+        anchors.margins: 2
+        spacing: 0
+
+        Text {
+            Layout.alignment: Qt.AlignHCenter
+            text: Qt.formatDateTime(clock.date, "HH")
+            color: Theme.fg
+            font.family: Theme.fontFamily
+            font.pixelSize: 14
+            font.bold: true
+        }
+
+        Text {
+            Layout.alignment: Qt.AlignHCenter
+            text: Qt.formatDateTime(clock.date, "mm")
+            color: Theme.fgDim
+            font.family: Theme.fontFamily
+            font.pixelSize: 12
+            font.bold: true
+        }
+    }
+
+    MouseArea {
+        id: area
+        anchors.fill: parent
+        hoverEnabled: true
+        onClicked: {
+            const cal = PopupRegistry.find(root.screen, "calendar");
+            if (cal) cal.showAt(root.mapToGlobal(0, 0).y);
+        }
+    }
+}
