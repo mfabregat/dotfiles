@@ -47,31 +47,33 @@ Singleton {
     readonly property color urgent: brightRed
     readonly property color warn: brightYellow
 
-    // ── Design tokens (plain numbers — tweak freely) ──────────────────
+    // ── Design tokens ─────────────────────────────────────────────────
     readonly property string fontFamily: "Noto Sans Nerd Font Propo"
     readonly property string fontMono: "JetBrainsMono Nerd Font Propo"
-    readonly property int barWidth: 32
 
-    readonly property int spacing: 3
-    readonly property int padding: 5
-    readonly property int radius: 6
-    readonly property int innerMargin: 3                            // bar window content margin
-    readonly property int widgetMargin: 2                           // widget-internal margin
-    readonly property int widgetWidth: 22                           // bar widget width
-    readonly property int pillWidth: 21                             // workspaces/taskbar/tray pills
+    // ── Bar ───────────────────────────────────────────────────────────
+    readonly property int barWidth: 32   // width of the bar window on screen
+    readonly property int spacing: 3     // gap between bar widgets / popup rows
+    readonly property int widgetWidth: 22 // width of every bar widget
+
+    // ── Popups (calendar, audio menu, power menu) ─────────────────────
+    readonly property int padding: 5     // inner padding of popup panels
+    readonly property int radius: 6      // popup corner radius
+    readonly property int popupRowHeight: 24 // menu row height (devices, actions)
+    readonly property int calendarCell: 23  // calendar day cell size
+
+    // ── Pills (workspaces / taskbar / tray icons) ─────────────────────
+    readonly property int pillWidth: 21
     readonly property int pillHeight: 18
-    readonly property int popupRowHeight: 24                        // popup menu rows
-    readonly property int calendarCell: 23                          // calendar day cell
 
-    readonly property int iconSize: 12
-    readonly property int iconSizeLarge: 14
-    readonly property int fontSizeTiny: 6
-    readonly property int fontSizeSmall: 8
-    readonly property int fontSize: 9
-    readonly property int fontSizeLarge: 11
-    readonly property int textSize: 10
+    // ── Typography & icons ────────────────────────────────────────────
+    readonly property int iconSize: 12    // taskbar/tray app icons
+    readonly property int fontSizeTiny: 6   // small labels (percentages, artist)
+    readonly property int fontSizeSmall: 8  // pill numbers, weekday headers
+    readonly property int fontSize: 9       // general text (track title, menus)
+    readonly property int fontSizeLarge: 11 // prominent text (glyphs, clock, power)
 
-    // Mpris rotated strips: visual width of the text lines
-    readonly property int titleStrip: 13
-    readonly property int artistStrip: 11
+    // ── Mpris strips (rotated title/artist lines) ────────────────────
+    readonly property int titleStrip: 13  // visual width of the title line
+    readonly property int artistStrip: 11 // visual width of the artist line
 }
