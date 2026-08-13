@@ -10,6 +10,7 @@
 //
 // The card-level MouseArea is declared first (lowest z) so the close and
 // action buttons above it keep receiving clicks.
+import Quickshell
 import Quickshell.Services.Notifications
 import QtQuick
 import qs
@@ -184,7 +185,7 @@ Rectangle {
                     required property var modelData
 
                     height: 22
-                    width: actionText.implicitWidth + 14
+                    width: Math.min(actionText.implicitWidth + 14, 140)
                     radius: 5
                     color: actionArea.containsMouse ? Theme.accent : Theme.dark1
                     Behavior on color { ColorAnimation { duration: 150 } }
@@ -214,12 +215,14 @@ Rectangle {
         }
     }
 
-    /// Resolve an app icon to an Image source (name → icon theme, path → file).
+    /// Resolve an app icon to an Image source. Uses the native
+    /// `Quickshell.iconPath` for theme names; absolute paths become file
+    /// URLs (apps sometimes pass `/path/to/icon.png` directly).
     function iconSource(appIcon: string): string {
         const raw = String(appIcon || "");
         if (raw.length === 0) return "";
         if (raw.startsWith("file://") || raw.startsWith("image://")) return raw;
         if (raw.startsWith("/")) return "file://" + raw;
-        return "image://icon/" + raw;
+        return Quickshell.iconPath(raw);
     }
 }

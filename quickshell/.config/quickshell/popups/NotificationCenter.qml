@@ -25,6 +25,12 @@ PanelWindow {
     readonly property var i3Monitor: I3.monitors.values.length ? I3.monitorFor(root.screen) : null
     visible: Notifications.centerOpen && root.i3Monitor !== null && root.i3Monitor.focused
 
+    // Card height computed explicitly: padding + header + list + spacing +
+    // empty state (plain Items don't contribute implicit sizes, so no
+    // implicit propagation here), clamped to the screen.
+    readonly property int listH: Math.min(Notifications.notifications.length * 96, 400)
+    readonly property int emptyH: Notifications.notifications.length === 0 ? 18 : 0
+
     // Fresh open: arm keyboard focus (deferred past surface mapping).
     onVisibleChanged: {
         if (root.visible) Qt.callLater(() => focusCatcher.forceActiveFocus());
@@ -37,12 +43,6 @@ PanelWindow {
     }
 
     // ── Card (right edge, next to the bar) ─────────────────────────────
-    // Height computed explicitly: padding + header + list + spacing + empty
-    // state (plain Items don't contribute implicit sizes, so no implicit
-    // propagation here), clamped to the screen.
-    readonly property int listH: Math.min(Notifications.notifications.length * 96, 400)
-    readonly property int emptyH: Notifications.notifications.length === 0 ? 18 : 0
-
     Rectangle {
         id: card
         anchors.right: parent.right

@@ -2,7 +2,7 @@
 //
 // Owns the org.freedesktop.Notifications server, keeps a capped history for
 // the center, drives popup visibility/timeouts, and exposes the IPC entry
-// point (`quickshell ipc call notifications toggle|open|close|test|dnd`).
+// point (`quickshell ipc call notifications toggle|open|close|test|dnd|clear|count`).
 //
 // Lifecycle (verified against quickshell 0.3.0 source, 2026-08):
 // - The server emits `notification` synchronously; setting `tracked = true`
@@ -53,6 +53,14 @@ Singleton {
     /// Center open state (bell click / $mod+n via IPC).
     property bool centerOpen: false
 
+    // Enabling DND ends any popups still on screen (new ones are stored but
+    // never shown; critical still interrupts, matching swaync).
+    onDndChanged: {
+        if (root.dnd) {
+            for (const w of root.popups.slice()) root.endPopup(w);
+        }
+    }
+
     readonly property int historyLimit: 50
     readonly property int popupLimit: 3
     readonly property int tickMs: 250
@@ -62,15 +70,14 @@ Singleton {
     readonly property int timeoutNormal: 7000
     readonly property int timeoutCritical: 0
 
-    /// A new notification was stored (wrapper carries `notification`).
-    signal newNotification(var wrapper)
-
     // ── Popup timeout driver ───────────────────────────────────────────
+    // Runs only while popups exist; each tick accumulates elapsed time on
+    // the popup wrappers (paused ones are skipped while hovered).
     Timer {
         id: ticker
         interval: root.tickMs
         repeat: true
-        running: true
+        running: root.popups.length > 0
         onTriggered: {
             for (const w of root.popups) {
                 if (w.paused || w.timeoutMs <= 0) continue;
@@ -87,11 +94,10 @@ Singleton {
         const wrap = {
             notification: notif,
             screen: root.focusedScreen(),
-            popup: false,
             timeoutMs: root.timeoutFor(notif),
             elapsed: 0,
             paused: false,
-            transient: notif.hints["transient"] === true,
+            transient: notif.transient,
             time: Date.now(),
         };
 
@@ -104,13 +110,12 @@ Singleton {
         root.notifications = next;
 
         // Popup (suppressed by DND / open center; critical always shows).
+        // Popup membership IS the popups array — no separate flag.
         const isCritical = notif.urgency === NotificationUrgency.Critical;
         if ((!root.dnd || isCritical) && !root.centerOpen) {
-            wrap.popup = true;
             root.popups = [wrap].concat(root.popups);
             if (root.popups.length > root.popupLimit) {
-                const dropped = root.popups.pop();
-                dropped.popup = false; // stays in history; ticker no-ops on it
+                root.popups.pop(); // oldest leaves the window, stays in history
             }
             root.unread += 1;
         }
@@ -119,10 +124,11 @@ Singleton {
         notif.closed.connect(() => root.removeWrapper(wrap));
 
         console.log("[notifications] " + (notif.appName || "?") + ": " + notif.summary);
-        root.newNotification(wrap);
     }
 
     function timeoutFor(notif: var): int {
+        // Resident notifications (e.g. always-on status) never auto-dismiss.
+        if (notif.resident) return 0;
         if (notif.expireTimeout > 0) return notif.expireTimeout;
         if (notif.urgency === NotificationUrgency.Critical) return root.timeoutCritical;
         if (notif.urgency === NotificationUrgency.Low) return root.timeoutLow;
@@ -146,8 +152,7 @@ Singleton {
     /// Stop showing `w` as a popup. Transient notifications (screen
     /// recorders, ...) vanish entirely; the rest stay in history.
     function endPopup(w: var): void {
-        if (!w.popup) return;
-        w.popup = false;
+        if (!root.popups.includes(w)) return;
         root.popups = root.popups.filter(x => x !== w);
         if (w.transient && w.notification) w.notification.dismiss();
     }

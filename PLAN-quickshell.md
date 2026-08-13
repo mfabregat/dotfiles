@@ -385,7 +385,27 @@ Landmines found and worked around (this phase):
 
 Note: the qslog rotates at ~64KB and the threaded logger can interleave
 lines — for long sessions, grep the newest instance under
-`/run/user/1000/quickshell/by-id/`.
+`/run/user/1000/quickshell/by-id/`. (console.log also lands in the
+session's stdout log, e.g. `~/.local/state/ly-session.log`, which is the
+complete copy — the qslog mirror can drop lines.)
+
+### Review pass (2026-08-13)
+
+- Dropped the unused `newNotification` signal and the redundant `popup`
+  flag on wrappers (popup membership IS the `popups` array).
+- Ticker now runs only while popups exist (`running: popups.length > 0`).
+- `transient` read from the native Notification property instead of the
+  `hints` map; `timeoutFor` now honors the native `resident` property
+  (resident notifications never auto-dismiss their popup).
+- Enabling DND ends any popups still on screen (swaync behavior).
+- Icon resolution uses the native `Quickshell.iconPath()` for theme names
+  (kept the absolute-path → `file://` branch; quickshell has no
+  client-side notify API and libnotify is absent, so `test()` stays on
+  gdbus).
+- Action buttons capped at 140px wide; stale comments fixed; center
+  height properties moved to the top.
+- Re-verified live: full sweep clean (0 errors), DND suppress+store,
+  clear, timeouts.
 
 ## Landmine audit (2026-08-13)
 

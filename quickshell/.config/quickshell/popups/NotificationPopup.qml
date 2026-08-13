@@ -1,8 +1,8 @@
 // popups/NotificationPopup.qml — transient notification popups, one window
 // per screen (Variants in shell.qml). Shows the popups routed to this
 // screen (≤ 3, newest on top) in a small column just left of the bar.
-// Urgency styling lives in NotificationRow (critical = red border + left
-// bar; it also never auto-dismisses). Hovering a popup pauses its timer.
+// Urgency styling lives in NotificationRow (critical = red border; it also
+// never auto-dismisses). Hovering a popup pauses its timer.
 //
 // Sizing note: the window's implicit height follows the ListView's
 // contentHeight (a Column+Repeater did not pick up delegate sizes — the
