@@ -31,4 +31,18 @@ ShellRoot {
         model: Quickshell.screens
         NotificationCenter {}
     }
+
+    // OSD: one bottom-center window per screen; only the instance routed
+    // by services/Osd.qml (monitor focused at trigger) is visible.
+    Variants {
+        model: Quickshell.screens
+        OsdPopup {}
+    }
+
+    // Polkit auth dialog: one fullscreen window per screen; only the
+    // focused monitor's instance is visible (see popups/PolkitDialog.qml).
+    Variants {
+        model: Quickshell.screens
+        PolkitDialog {}
+    }
 }
