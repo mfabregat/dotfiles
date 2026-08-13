@@ -55,6 +55,7 @@ Rectangle {
             elide: Text.ElideRight
             horizontalAlignment: Text.AlignHCenter
             text: root.activeNet ? root.activeNet.name : ""
+            visible: root.activeNet !== null // no blank line when disconnected
             color: Theme.fgDim
             font.family: Theme.fontFamily
             font.pixelSize: Theme.fontSizeTiny

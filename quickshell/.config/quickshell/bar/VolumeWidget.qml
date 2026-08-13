@@ -40,7 +40,6 @@ Rectangle {
         }
 
         // Vertical volume bar (fill rises with the level)
-        // Vertical volume bar (fill rises with the level)
         Item {
             Layout.alignment: Qt.AlignHCenter
             Layout.fillHeight: true
