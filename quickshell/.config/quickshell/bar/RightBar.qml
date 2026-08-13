@@ -61,12 +61,18 @@ Scope {
 
                     // Top: desks + now playing
                     Workspaces {
+                        id: wsWidget
                         Layout.alignment: Qt.AlignHCenter
                         screen: barWindow.screen
                     }
 
                     MprisWidget {
                         Layout.alignment: Qt.AlignHCenter
+                        // Space between workspaces and the taskbar (fixed
+                        // siblings only — acyclic; the two spacers absorb
+                        // whatever the text leaves over)
+                        freeSpace: barWindow.height - wsWidget.height
+                            - taskbarWidget.height - bottomGroup.height - 5 * Theme.spacing
                     }
 
                     Item {
@@ -75,6 +81,7 @@ Scope {
 
                     // Center: all windows (taskbar)
                     Taskbar {
+                        id: taskbarWidget
                         Layout.alignment: Qt.AlignHCenter
                     }
 
@@ -82,45 +89,39 @@ Scope {
                         Layout.fillHeight: true
                     }
 
-                    // Bottom: system + clock + power
-                    CpuMemWidget {
+                    // Bottom: system + clock + power (one block so the
+                    // mpris freeSpace can use its total height)
+                    Column {
+                        id: bottomGroup
+                        width: 30
+                        spacing: Theme.spacing
                         Layout.alignment: Qt.AlignHCenter
-                    }
 
-                    VolumeWidget {
-                        Layout.alignment: Qt.AlignHCenter
-                        audioMenu: audioMenu
-                    }
+                        CpuMemWidget {}
 
-                    BacklightWidget {
-                        Layout.alignment: Qt.AlignHCenter
-                    }
+                        VolumeWidget {
+                            audioMenu: audioMenu
+                        }
 
-                    NetworkWidget {
-                        Layout.alignment: Qt.AlignHCenter
-                    }
+                        BacklightWidget {}
 
-                    LayoutWidget {
-                        Layout.alignment: Qt.AlignHCenter
-                    }
+                        NetworkWidget {}
 
-                    TrayWidget {
-                        Layout.alignment: Qt.AlignHCenter
-                        barWindow: barWindow
-                    }
+                        LayoutWidget {}
 
-                    BatteryWidget {
-                        Layout.alignment: Qt.AlignHCenter
-                    }
+                        TrayWidget {
+                            barWindow: barWindow
+                        }
 
-                    ClockWidget {
-                        Layout.alignment: Qt.AlignHCenter
-                        calendar: calendarPopup
-                    }
+                        BatteryWidget {}
 
-                    PowerWidget {
-                        Layout.alignment: Qt.AlignHCenter
-                        powerMenu: powerMenu
+                        ClockWidget {
+                            calendar: calendarPopup
+                        }
+
+                        PowerWidget {
+                            powerMenu: powerMenu
+                        }
                     }
                 }
             }

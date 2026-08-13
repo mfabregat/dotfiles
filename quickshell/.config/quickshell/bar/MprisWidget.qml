@@ -21,16 +21,33 @@ Rectangle {
     readonly property bool hasPlayer: player !== null
     readonly property bool playing: player !== null && player.isPlaying
 
-    // Strip lengths follow the actual text, clamped to these maximums
-    // (longer tracks are elided). Reactive: short track -> compact widget.
+    /// Vertical space between the workspaces block and the taskbar
+    /// (computed in RightBar from the fixed siblings — non-circular).
+    required property real freeSpace
+
+    // Length limits: whole text up to the maximums; if it does not fit the
+    // free space, shrink the title first (down to minTitleLen), then the
+    // artist. All bindings are acyclic: freeSpace comes from the layout's
+    // fixed siblings, never from this widget's own size.
     readonly property int maxTitleLen: 140
+    readonly property int minTitleLen: 60
     readonly property int maxArtistLen: 80
-    readonly property real titleLen: Math.min(titleText.implicitWidth, maxTitleLen)
-    readonly property real artistLen: Math.min(artistText.implicitWidth, maxArtistLen)
+    readonly property real titleNatural: Math.min(titleText.implicitWidth, maxTitleLen)
+    readonly property real artistNatural: Math.min(artistText.implicitWidth, maxArtistLen)
+    readonly property real availableLen: Math.max(0, root.freeSpace - 12 - iconText.implicitHeight)
+
+    readonly property real titleLen: root.titleNatural + root.artistNatural <= root.availableLen
+        ? root.titleNatural
+        : Math.min(Math.max(root.minTitleLen,
+                            Math.min(root.titleNatural, root.availableLen - root.artistNatural)),
+                   root.availableLen)
+    readonly property real artistLen: root.titleNatural + root.artistNatural <= root.availableLen
+        ? root.artistNatural
+        : Math.max(0, Math.min(root.artistNatural, root.availableLen - root.titleLen))
 
     width: 30
-    // iconText.implicitHeight: the glyph's real line height (font 15 -> 21)
-    height: 6 + iconText.implicitHeight + 3 + root.titleLen + 3 + root.artistLen
+    // Sized by the layout to exactly this (no fill, no loop)
+    implicitHeight: 6 + iconText.implicitHeight + 3 + root.titleLen + 3 + root.artistLen
     visible: hasPlayer
     radius: 7
     color: playing ? Theme.accent
@@ -78,12 +95,12 @@ Rectangle {
                 width: root.titleLen
                 height: 17
                 x: 21 // visual strip spans [4, 21] (centered in the 24px content)
-                y: 0 // title strip starts at the top of the strips area
+                y: 0
                 elide: Text.ElideRight
                 text: root.player ? root.player.trackTitle || "" : ""
                 color: root.playing ? Theme.bg : Theme.fg
                 font.family: Theme.fontFamily
-                font.pixelSize: 11
+                font.pixelSize: 14
                 Behavior on color { ColorAnimation { duration: 150 } }
             }
 
@@ -99,7 +116,7 @@ Rectangle {
                 text: root.player ? root.player.trackArtist || "" : ""
                 color: root.playing ? Theme.bg : Theme.fgDim
                 font.family: Theme.fontFamily
-                font.pixelSize: 9
+                font.pixelSize: 12
                 Behavior on color { ColorAnimation { duration: 150 } }
             }
         }
