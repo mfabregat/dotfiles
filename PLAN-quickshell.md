@@ -23,6 +23,142 @@ Date: 2026-08 · Quickshell 0.3.0 (Arch `extra/quickshell`, latest release, docs
    qmltypes/source. When a visual check is genuinely needed (appearance,
    animation, layout), **ask the user to verify** — never screenshot.
 
+## Efficiency, optimization & portability playbook (verified 2026-08-13)
+
+Read before touching any shell code. Everything below was verified against the
+installed 0.3.0-2 package (qmltypes under `/usr/lib/qt6/qml/Quickshell/**/*.qmltypes`,
+the shipped `Io/FileView.qml` wrapper, and live logs).
+
+### Verified API facts (avoid re-discovering these)
+
+- **ObjectModel vs list properties are NOT interchangeable.** Exports typed as
+  `UntypedObjectModel` (alias `Quickshell/ObjectModel`) expose `.values` +
+  `valuesChanged` only — no `.length`: `I3.monitors`, `I3.workspaces`,
+  `SystemTray.items`, `Mpris.players`, `DesktopEntries.applications`,
+  `ToplevelManager.toplevels`, `Networking.devices`, `Pipewire.nodes`,
+  UPower devices. But `Quickshell.screens` is a **list property** — `.length`
+  and `screens[i]` work there and `.values` does NOT exist. Landmine 1's
+  blanket wording is wrong for screens; `Quickshell.screens.length` in
+  Osd.qml/Notifications.qml is correct as written.
+- **Binding dependency tracking:** reads of tracked (notify-carrying) QObject
+  properties — including inside QML JS functions — re-evaluate bindings.
+  Reads *inside native C++ method calls* do not. So `I3.monitorFor(screen)`
+  still needs the `I3.monitors.values.length ? … : null` guard (native
+  method), while `I3.focusedMonitor` (notify property) and the screens list
+  need no guard. The comment framing "a bare function call evaluates once"
+  is wrong — say "native method internals aren't tracked" instead.
+- **FileView is a trigger + blocking reader, not a reactive property.** The
+  shipped wrapper exposes properties `path`/`preload`/`blockLoading`/
+  `blockAllReads`/`printErrors` and **functions** `text()`/`data()` that
+  force a read (microseconds on sysfs). React to signals `loaded` /
+  `fileChanged` and read imperatively; never bind to a file's contents.
+  **Correction (verified 2026-08-13, throwaway config):** `text()` returns
+  the internal buffer, which the watcher does NOT refresh on `fileChanged`
+  (stale read — preload:true returned the old value; preload:false returned
+  empty). The reliable pattern: `preload: true` for the initial read,
+  `onFileChanged: fv.reload()`, then read `text()` from
+  `onInternalTextChanged`/`onLoaded` (both fire after the async re-read;
+  updates are idempotent).
+- **Process** (`Quickshell.Io`): `command` is a string list (no shell),
+  `stdout: StdioCollector { onStreamFinished }`, `running: true` re-execs on
+  every trigger; use `runningChanged` to chain steps (no Timers needed).
+- **SystemClock** exposes `hours`/`minutes`/`seconds` + `date` — no need for
+  `Qt.formatDateTime` for the clock widgets.
+- **Phase 6-8 natives present:** `WlSessionLock`/`WlSessionLockSurface`
+  (`Quickshell.Wayland`), `IdleInhibitor` (`Quickshell.Wayland._IdleInhibitor` —
+  native idle inhibition, no D-Bus ScreenSaver glue daemon needed for the
+  screenshot picker), `ScreencopyView` exists but the plan deliberately
+  avoids it, `ToplevelManager.Toplevel` (`appId`/`title`/`activated` +
+  `activate()`/`close()`) for window actions without swaymsg.
+
+### Process-spawn budget (measured)
+
+- One spawn ≈ 1 ms + child setup; the idle shell should stay **≲ 1 spawn/s**.
+  Prefer event-driven (Pipewire signals, FileView inotify, native models,
+  notification driver one-shot timer) over any periodic ticker.
+- `CpuMemTemp` polls at 1 Hz and spawns sh + grep + awk + N×cat + sort + tail
+  (≈ 10 forks/s with 6 hwmon sensors). One `sh -c 'cat /proc/stat
+  /proc/meminfo /sys/class/hwmon/hwmon*/temp*_input 2>/dev/null'` ≈ 2 forks/s,
+  same parse (meminfo lines then carry `MemTotal:` prefixes — parse the first
+  number per line). 1 Hz is the old waybar cadence, keep it.
+- **Brightness reads should be fully native** (FileView): watch the device's
+  `brightness` file, compute percent = raw / max_brightness (both readable
+  via `text()`). The current 2 s `brightnessctl -m get` safety poll is a
+  redundant 0.5 spawn/s forever on kernels where sysfs inotify works — and
+  that it works was *verified* here (kernel 7.1.8 + throwaway config). The
+  "inert sysfs inotify" worry was never reproduced — don't keep permanent
+  pollers for unverified failure modes. Keep `brightnessctl` only for
+  **writes** (udev perms); reads via sysfs make the shell work on machines
+  where brightnessctl isn't installed (portability win — availability probes
+  must check the API/sysfs directly, never an optional binary).
+- `BacklightWidget` wheel: each tick spawns brightnessctl; coalesce rapid
+  wheel deltas if it ever feels laggy (volume widget is native and needs no
+  such care).
+
+### Windows & rendering
+
+- `visible: false` unmaps layer surfaces — hidden fullscreen transparent
+  windows (launcher/center/polkit/OSD) cost nothing to composite. Eager
+  creation + visibility toggle is the pattern; landmine 7's "lazy creation
+  race" was not re-verified in the audit, but eager is the simpler, safer
+  choice anyway — keep it.
+- Do NOT merge the three fullscreen grab overlays (launcher/center/polkit)
+  into one window: a polkit prompt can arrive while the launcher is open and
+  the surfaces must grab independently.
+- Repaint only on change: Canvas `onValuesChanged: requestPaint()`
+  (sparklines), `Behavior on color` for hovers. No always-on animations.
+- `Variants { model: Quickshell.screens }` per-screen windows is the verified
+  pattern — keep it for phase 6's lock surfaces.
+
+### Measured scale (anti-optimization guard)
+
+- 39 desktop entries on this machine: the launcher's per-keystroke
+  `buildResults` re-scores all entries in sub-ms — **do not add debouncing
+  or haystack caches** for the current scale (only revisit at 500+ entries).
+- 16 cores / 6 hwmon sensors / 3 screens: the fork reduction above matters
+  more than any in-QML micro-optimization.
+
+### Simplification opportunities found in review (fix when you touch the file)
+
+- `NetworkWidget.findActive`: the `i === 0 ? networks : d.networks.values`
+  index hack can miss a wired connection when a wifi device exists. Check
+  the wifi device's networks first, then *every* device's own networks.
+- `MprisWidget.focusPlayerWindow`: replace the pgrep+swaymsg shell spawn with
+  a `ToplevelManager.toplevels` appId match + `activate()` (native, no
+  subprocess, matches the plan's "focus via I3" intent).
+- `TrayWidget` sets both `height` and `Layout.preferredHeight` — the
+  parent is a plain `Column` (not a Layout), so `Layout.preferredHeight`
+  is inert there: drop it and keep `height` (the sizing property).
+- Duplicated helpers (`focusedScreen()` in Osd/Notifications, the
+  `i3Monitor` guard in Launcher/Center/Polkit/Workspaces) are a deliberate
+  plan decision; extract a shared `services/util` module only if a 4th copy
+  of the same helper appears.
+- Dead until phase 6: PowerMenu's Lock row calls `quickshell ipc call lock
+  lock` — the target doesn't exist yet (harmless, just don't test it as
+  "broken").
+
+### Portability rules
+
+- Availability probes check the API/sysfs directly, never an optional binary
+  (see brightness above). Writes may require a binary (brightnessctl),
+  reads should not.
+- Keep hardware scans machine-agnostic: hwmon `temp*_input` max = hottest
+  sensor on any machine — no per-machine hwmon path (old waybar had one;
+  don't reintroduce it).
+- sway integration goes through `quickshell ipc call …` + the I3 module;
+  never parse `swaymsg -t get_tree` (sway `get_workspaces` has no node
+  trees — verified).
+- `DesktopEntries` scan is async — every icon/app lookup must track
+  `DesktopEntries.applications.values` (the launcher and taskbar already do).
+- **Never run unattended PAM-triggering tests** (faillock deny=3 → 10-min
+  lock of sudo/su/login). Phase-6 lock and any polkit/pkexec test must be
+  interactive or scripted against a mock.
+- New machines need (install.md, phase 8): quickshell 0.3.0 (pin), pipewire
+  (wpctl), brightnessctl (writes), polkit, NetworkManager, UPower,
+  wl-clipboard (phase 7), ttf-noto-nerd + ttf-jetbrains-mono-nerd, grim.
+- Keep the wallpaper-blur lock (no screencopy, no warm-up races); verify
+  `--locked` media keys still work on sway 1.12.
+
 ## Goals
 
 - Replace waybar (both bars), rofi, swaylock, swaynag, and the waybar helper
@@ -389,6 +525,125 @@ lines — for long sessions, grep the newest instance under
 session's stdout log, e.g. `~/.local/state/ly-session.log`, which is the
 complete copy — the qslog mirror can drop lines.)
 
+## Phase 5 log (2026-08-13, done)
+
+OSD (volume via Pipewire watch, brightness via sysfs poll) + polkit
+authentication agent live. No sway config changes needed — the OSD is a
+pure observer and the polkit agent self-registers on the system bus.
+
+- `services/Brightness.qml` (modified): availability now requires a real
+  `backlight`-class device (probe of `/sys/class/backlight`). The old code
+  trusted brightnessctl's default-device selection, which falls back to
+  keyboard LEDs when no backlight exists — on this desktop that lit up a
+  phantom 0% widget (now gone from the bar). Poll 2s → 500ms so the OSD
+  detects changes promptly.
+- `services/Osd.qml` (new): singleton OSD state — kind (volume/brightness),
+  level, muted, routed screen. Volume is event-driven via Pipewire
+  (`volumesChanged`/`mutedChanged` on `defaultAudioSink.audio` with a
+  `PwObjectTracker`; official volume-osd example pattern). Brightness is
+  poll-detected by watching `Brightness.percent`. Startup/hot-reload
+  values are suppressed (armed flag). Identical re-shows (a quickshell
+  write emits the Pipewire signal locally AND on the server echo) only
+  re-arm the timer — no log spam.
+- `popups/OsdPopup.qml` (new): one bottom-center PanelWindow per screen
+  (Variants in shell.qml); only the routed screen's instance shows.
+  Layer-shell spec: bottom anchor + no horizontal anchor → centered.
+  Empty input mask (`mask: Region {}`) so clicks pass through.
+- `services/Polkit.qml` (new): owns `PolkitAgent` (default path
+  `/org/quickshell/Polkit`), exposes active/flow/registered, submit()/cancel().
+- `popups/PolkitDialog.qml` (new): fullscreen PanelWindow per screen,
+  focused-monitor only (launcher pattern + exclusive keyboard grab).
+  Card: icon (iconPath w/ shield fallback), message, prompt, password
+  TextInput (echo when `responseVisible`), error/info text, identity
+  selector (only when polkitd offers > 1 — inline delegate per landmine
+  14), Cancel/OK buttons. Enter submits, Esc cancels; failed attempts
+  clear + refocus (the flow keeps itself alive with a fresh session).
+- `shell.qml` (modified): OsdPopup + PolkitDialog Variants added.
+
+Verified live: clean loads; OSD fires on wpctl volume/mute changes; bar
+widget scrolls dedupe to one log line; polkit agent registered (`[polkit]
+agent registered: true`), pkexec requests route to it (polkitd journal +
+`[polkit] request active` logs), dialog appears, user cancel → pkexec
+"Request dismissed", wrong password → red error + retry, correct password
+→ `pkexec --disable-internal-agent id` prints uid (user-confirmed).
+PAM needs no system edits: `/usr/lib/pam.d/polkit-1` exists (includes
+system-auth) — the bundled pam.d trick is only needed for the lock screen
+(phase 6). Brightness OSD is inert here (no backlight); the phantom
+0% brightness widget is gone from the bar.
+
+Landmines found and worked around (this phase):
+
+16. **brightnessctl has no monitor/watch mode.** `brightnessctl -m monitor`
+    is parsed as the `max` operation (first letter 'm') and prints
+    max_brightness — verified against the installed 0.5.1 binary and the
+    master source, which has no monitor subcommand at all. "Brightness via
+    sysfs poll" (the plan's choice) is the only event source.
+17. **Unknown property reads in bindings don't error — they yield
+    undefined.** The OsdPopup progress bar and percent text used
+    `root.level` (no such property on PanelWindow) → "undefined%" text and
+    a NaN fill width. QML silently propagates undefined. Fix: reference the
+    singleton (`Osd.level`) everywhere in per-screen delegates.
+18. **Polkit success signal vs flow teardown ordering.** On SUCCESS the
+    agent nulls `flow` BEFORE emitting `authenticationSucceeded`
+    (AuthFlow::completed → mRequest->complete → finishAuthenticationRequest
+    → bActiveFlow=null, then emit), so a `Connections { target: flow }`
+    binding detaches just before the signal fires and the handler is never
+    called. Failure keeps the flow alive (fresh session restarted
+    internally), so the failure path worked fine via Connections. Fix:
+    JS-connect on the flow object in `onFlowChanged`.
+19. **`?.` in a Connections target yields undefined** → "Unable to assign
+    [undefined] to QObject*" + spurious "no signal matches" warnings.
+    Use an explicit ternary that yields null.
+20. **faillock is a landmine for unattended auth testing.** A polkit
+    conversation that ends without authenticating counts as a failed PAM
+    auth; three unattended pkexec tests (killed processes / nobody typed)
+    tripped `deny=3` → 10-minute account lock that also takes down
+    sudo/su/login (they all include system-auth). Debugging "password
+    always fails"? Check `faillock --user $USER` first. Never run
+    unattended PAM-triggering tests; the phase-6 lock screen (PAM) will
+    hit the same counter — password-only tests must be interactive.
+21. **pkexec kills itself when its parent dies** (`PR_SET_PDEATHSIG`) —
+    launching pkexec from a tool/shell that exits cancels the polkit
+    conversation, so the dialog appears to "self-dismiss". Keep the
+    parent alive, or let the user run pkexec from their own terminal.
+
+Also: the right bar was reported missing once mid-session; a clean
+restart restored it (phase-1 quirk 2 pattern — hot-reload window state
+can go stale; no code change needed). One OSD bug fixed live (the
+undefined-property issue above) caused an automatic hot reload that
+re-registered the polkit agent mid-test — don't edit files while a polkit
+conversation is on screen.
+
+### Phase 5 review pass (2026-08-13)
+
+- **Brightness: ad-hoc 500ms poll → native FileView watch.** The plan's
+  audit claimed FileView was "HEAD-only" and unusable for brightness —
+  both wrong. Verified: FileView exists in installed 0.3.0-2, and
+  inotify DOES deliver events on sysfs brightness files (raw inotify
+  test on kernel 7.1.8 + a quickshell throwaway config watching
+  `/sys/class/leds/.../brightness`: loaded + fileChanged fired).
+  `Brightness.qml` now watches the backlight file with `FileView
+  { watchChanges: true }` (event-driven, instant); a 2s safety poll
+  remains as insurance for kernels where sysfs inotify is inert (a
+  no-op re-read when the watch fires first). The initial reading comes
+  from `onLoaded` (file-read completion — not inotify-dependent), so the
+  first value is never delivered late. Spawn rate drops from 2/s to
+  ~0.5/s; the bar widget and OSD react instantly on modern kernels.
+- **Osd: deterministic startup window + source-level dedupe.** The armed
+  window went 600ms → 1500ms so it always covers the initial readings
+  (sink attach emit + brightness onLoaded — both land ~within 1s;
+  safe on every kernel, no race). The volume echo dedupe moved out of
+  `show()` into `onVolumeChanged` (lastVol/lastMutedShown): a
+  quickshell-side write emits the Pipewire signal locally AND on the
+  server echo — only the first identical pair shows. `show()` is now
+  a dumb set-state-and-log (the source dedupes); the armed flag
+  replaced the per-source seen-flags (which had a first-change hole
+  when the initial value was already current at instantiation).
+- **Deliberately kept:** `focusedScreen()` is duplicated between
+  Osd.qml and Notifications.qml — a shared module for one 10-line
+  function isn't worth the churn on verified phase-4 code (noted in
+  both files).
+
 ### Review pass (2026-08-13)
 
 - Dropped the unused `newNotification` signal and the redundant `popup`
@@ -411,6 +666,54 @@ complete copy — the qslog mirror can drop lines.)
   height properties moved to the top.
 - Re-verified live: full sweep clean (0 errors), DND suppress+store,
   clear, timeouts; user-confirmed hover-pause with the new driver.
+
+### Phase 1-5 efficiency & portability pass (2026-08-13)
+
+Implemented the playbook fixes (each self-contained, hot-reload-safe):
+
+- **CpuMemTemp: single-`cat` pipeline.** The poll command is now
+  `cat /proc/stat /proc/meminfo /sys/class/hwmon/hwmon*/temp*_input`
+  (2 forks/tick instead of ~10: the old sh+grep+awk+N×cat+sort+tail).
+  Parser updated: meminfo lines are filtered to MemTotal/MemAvailable
+  (first number per line) and the hottest temp is `Math.max(...temps)/1000`
+  — same semantics as the old sort|tail -1.
+- **Brightness: fully native reads.** FileView (inotify, verified) watches
+  the device's `brightness` file; `percent = raw / max_brightness` from the
+  file contents. Pattern: `preload: true` (initial), `onFileChanged:
+  reload()`, read `text()` in `onInternalTextChanged`/`onLoaded` — the
+  watcher does NOT refresh the buffer itself (verified with a throwaway
+  config: preload:true returned stale, preload:false returned empty). The
+  2s `brightnessctl -m get` safety poll is gone (0.5 spawn/s forever for an
+  unverified failure mode). `brightnessctl` remains only for *writes*
+  (bar widget). Bonus: the shell now works on machines without
+  brightnessctl installed. Untestable here (no backlight on this machine) —
+  needs verification on a machine with one.
+- **NetworkWidget.findActive fixed.** The old `i === 0 ? networks :
+  d.networks.values` index hack never scanned the ethernet device's own
+  networks when a wifi device existed → wired-only connections showed as
+  disconnected. Now: connected wifi first, then every device's own
+  networks. (Logic unit-tested in node; live wifi path unchanged.)
+- **MprisWidget.focusPlayerWindow: native.** Dropped the pgrep+swaymsg
+  shell spawn; now raises via MPRIS and activates the matching
+  `ToplevelManager` toplevel (appId vs desktopEntry, exact then
+  substring). No subprocess, works without swaymsg in PATH.
+- **TrayWidget**: dropped the inert `Layout.preferredHeight` (parent is a
+  plain Column — `height` is the sizing property) + removed the unused
+  QtQuick.Layouts import.
+- **ClockWidget**: uses SystemClock's native `hours`/`minutes` (zero-
+  padded) instead of `Qt.formatDateTime`.
+- **Comments**: corrected the "bare function call evaluates once" framing
+  in Workspaces/Launcher/NotificationCenter/PolkitDialog — the guard is
+  needed because `I3.monitorFor` is a native C++ method, not because
+  function calls aren't tracked.
+- **install.md**: documented quickshell 0.3.0 (pin) + runtime deps
+  (pipewire, brightnessctl, polkit, networkmanager, upower, wl-clipboard,
+  grim) and the sway ≥ 1.8 requirement.
+
+Verified: node unit tests for the CpuMemTemp parser and findActive logic;
+FileView text() blocking-read pattern verified with a throwaway config on a
+plain file (see the playbook); live shell reloaded clean (0 errors, log
+checked after the final save).
 
 ## Landmine audit (2026-08-13)
 
@@ -455,8 +758,10 @@ signals):
 
 No other phase-2/3 assumptions were found questionable (popup anchoring,
 DesktopEntries async scan, `.values` reactivity, polling services with no
-native alternative — `Quickshell.Io` has no file-watch type in 0.3.0;
-FileView is HEAD-only).
+native alternative — see the phase-5 audit below, which corrected the
+"FileView is HEAD-only" claim: FileView IS present in the installed
+0.3.0-2 and its QFileSystemWatcher backend does deliver events on sysfs
+(verified with raw inotify AND a quickshell throwaway config).
 
 **Pattern:** of the assumptions that were actually verified, most were
 false or misdiagnosed. All were tagged by agents without a minimal

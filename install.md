@@ -10,6 +10,23 @@ gnome-keyring
 base-devel
 flatpak
 autotiling
+shikane
+
+
+
+## Quickshell shell (right bar · launcher · notifications · OSD · polkit)
+
+```bash
+sudo pacman -S quickshell pipewire brightnessctl polkit networkmanager upower wl-clipboard grim
+```
+
+- `quickshell` is pre-1.0: **pin 0.3.0** (Arch `extra/quickshell`); do not
+  upgrade blindly — configs live in git (see PLAN-quickshell.md).
+- `pipewire` provides wpctl (media/brightness keybindings); `brightnessctl`
+  is only needed for brightness *writes* (reads are native sysfs).
+- `networkmanager` (bar network state), `upower` (battery), `polkit` (auth
+  agent), `wl-clipboard` (phase-7 clipboard manager), `grim` (screenshots).
+- Sway ≥ 1.8 required (ext-session-lock for the phase-6 lock screen).
 
 
 
