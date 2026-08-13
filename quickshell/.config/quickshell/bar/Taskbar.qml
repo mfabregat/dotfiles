@@ -1,11 +1,12 @@
-// bar/Taskbar.qml — open windows on this monitor (icons; click to focus,
-// middle click to close). Data comes from services/TaskbarData.qml.
+// bar/Taskbar.qml — open windows on this monitor, from the native
+// wlr-foreign-toplevel protocol (no swaymsg subprocesses).
+// Click: activate · middle click: close (protocol requests).
 import Quickshell
 import Quickshell.I3
+import Quickshell.Wayland
 import QtQuick
 import QtQuick.Layouts
 import qs
-import qs.services
 
 Column {
     id: root
@@ -13,16 +14,15 @@ Column {
     required property var screen
     // Same tracked lookup as Workspaces.qml (see comment there)
     readonly property var monitor: I3.monitors.values.length ? I3.monitorFor(screen) : null
-    readonly property string monitorName: monitor ? monitor.name : ""
 
     spacing: 2
 
     Repeater {
-        model: TaskbarData.windows
+        model: ToplevelManager.toplevels
 
         delegate: Rectangle {
             required property var modelData
-            readonly property bool mine: modelData.monitor === root.monitorName
+            readonly property bool mine: modelData.screens.includes(root.monitor)
 
             // Resolve the real icon name via the app's desktop entry.
             // The applications list is passed in so the binding re-evaluates
@@ -44,8 +44,7 @@ Column {
             visible: mine
             radius: 6
             color: area.containsMouse ? Theme.bgHover
-                 : modelData.focused ? Theme.dark1
-                 : modelData.urgent ? Theme.brightRed
+                 : modelData.activated ? Theme.dark1
                  : "transparent"
 
             Image {
@@ -62,7 +61,7 @@ Column {
                 anchors.centerIn: parent
                 visible: !icon.visible && mine
                 text: modelData.appId ? modelData.appId.charAt(0).toUpperCase() : "?"
-                color: modelData.focused ? Theme.fg : Theme.fgDim
+                color: modelData.activated ? Theme.fg : Theme.fgDim
                 font.family: Theme.fontFamily
                 font.pixelSize: 11
                 font.bold: true
@@ -73,10 +72,15 @@ Column {
                 anchors.fill: parent
                 hoverEnabled: true
                 visible: mine
-                onClicked: I3.dispatch(`[con_id=${modelData.conId}] focus`)
+                acceptedButtons: Qt.LeftButton | Qt.MiddleButton
+
+                onClicked: (mouse) => {
+                    if (mouse.button === Qt.LeftButton)
+                        modelData.activate();
+                }
                 onPressed: (mouse) => {
                     if (mouse.button === Qt.MiddleButton)
-                        I3.dispatch(`[con_id=${modelData.conId}] kill`)
+                        modelData.close();
                 }
             }
         }

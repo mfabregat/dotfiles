@@ -29,17 +29,7 @@ Scope {
             implicitWidth: Theme.barWidth
             color: "transparent"
 
-            // ── Dismissal backdrop (one per screen) ────────────────────────────
-    Variants {
-        model: Quickshell.screens
-
-        PopupBackdrop {
-            required property var modelData
-            popupScreen: modelData
-        }
-    }
-
-    // ── Popups (anchored to their trigger widget) ───────────────
+            // ── Popups (anchored to their trigger widget) ───────────────
             CalendarPopup {
                 id: calendarPopup
                 anchorWindow: barWindow

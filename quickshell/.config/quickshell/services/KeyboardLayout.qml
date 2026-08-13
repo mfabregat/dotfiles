@@ -1,7 +1,9 @@
-// services/KeyboardLayout.qml — active xkb layout via sway IPC.
+// services/KeyboardLayout.qml — active xkb layout, from sway IPC input
+// events (no polling): one initial read, then compositor pushes changes.
 pragma Singleton
 
 import Quickshell
+import Quickshell.I3
 import Quickshell.Io
 import QtQuick
 
@@ -11,35 +13,34 @@ Singleton {
     property string layout: ""      // short form, e.g. "US" or "ES"
     readonly property bool available: layout !== ""
 
+    // Initial state (input events only arrive on change)
     Process {
-        id: pollProc
+        id: initialProc
 
         command: ["swaymsg", "-t", "get_inputs"]
-        running: true
+        running: false
 
         stdout: StdioCollector {
             onStreamFinished: root.parse(this.text)
         }
     }
 
-    Timer {
-        interval: 2000
-        repeat: true
-        running: true
-        onTriggered: pollProc.running = true
+    I3IpcListener {
+        subscriptions: ["input"]
+        onIpcEvent: (event) => root.parse(event.data)
     }
 
     function parse(text: string): void {
-        let inputs;
+        let obj;
         try {
-            inputs = JSON.parse(text);
+            obj = JSON.parse(text);
         } catch (e) {
             return;
         }
-        if (!Array.isArray(inputs)) return;
-
+        // get_inputs returns an array; input events carry a single device
+        const inputs = Array.isArray(obj) ? obj : [obj];
         for (const input of inputs) {
-            if (input.type !== "keyboard") continue;
+            if (!input || input.type !== "keyboard") continue;
             const name = input.xkb_active_layout_name || "";
             if (!name) continue;
             // "English (US)" -> "US"; "Spanish" -> "ES"
@@ -49,4 +50,6 @@ Singleton {
             return;
         }
     }
+
+    Component.onCompleted: initialProc.running = true
 }
