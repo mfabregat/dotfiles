@@ -26,8 +26,9 @@ PanelWindow {
     color: "transparent"
 
     // Focused monitor's launcher only. The I3.monitors.values guard makes
-    // the lookup re-run once sway IPC connects (a bare function call in a
-    // binding would evaluate once, to null — landmine 2 in the plan).
+    // the binding track valuesChanged and re-run the lookup once sway IPC
+    // connects (I3.monitorFor is native C++ — its internals aren't tracked
+    // by bindings; QML JS function calls ARE tracked).
     readonly property var i3Monitor: I3.monitors.values.length ? I3.monitorFor(root.screen) : null
     visible: LauncherState.open && root.i3Monitor !== null && root.i3Monitor.focused
 

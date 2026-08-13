@@ -22,6 +22,9 @@ PanelWindow {
     color: "transparent"
     exclusionMode: ExclusionMode.Ignore
 
+    // Focused monitor's instance only. The I3.monitors.values guard makes
+    // the binding track valuesChanged and re-run once sway IPC connects
+    // (I3.monitorFor is native C++ — internals aren't tracked by bindings).
     readonly property var i3Monitor: I3.monitors.values.length ? I3.monitorFor(root.screen) : null
     visible: Notifications.centerOpen && root.i3Monitor !== null && root.i3Monitor.focused
 

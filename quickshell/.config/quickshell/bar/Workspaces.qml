@@ -5,13 +5,16 @@ import Quickshell.I3
 import QtQuick
 import QtQuick.Layouts
 import qs
+import qs.popups
 
 Column {
     id: root
 
     required property var screen
-    // Tracked through I3.monitors.values so the lookup re-runs once sway IPC
-    // connects (a bare function call in a binding would evaluate once, to null).
+    // The I3.monitors.values guard makes the binding track valuesChanged,
+    // so the lookup re-runs once sway IPC connects. (I3.monitorFor is a
+    // native C++ method — its internals aren't tracked by bindings; the
+    // guard is what re-triggers it. QML JS function calls ARE tracked.)
     readonly property var monitor: I3.monitors.values.length ? I3.monitorFor(screen) : null
 
     spacing: 2
@@ -47,6 +50,7 @@ Column {
                 anchors.fill: parent
                 hoverEnabled: true
                 visible: root.monitor !== null
+                onPressed: PopupManager.hideOpen()
                 onClicked: modelData.activate()
             }
         }

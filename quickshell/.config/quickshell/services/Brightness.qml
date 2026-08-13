@@ -1,24 +1,21 @@
-// services/Brightness.qml — backlight brightness (brightnessctl).
-// percent is -1 when no backlight is available (widget hides itself).
+// services/Brightness.qml — backlight brightness. percent is -1 when no
+// backlight is available (widget hides itself).
 //
 // Phase 5: availability requires a real `backlight`-class device (probe of
-// /sys/class/backlight directly). The old code trusted brightnessctl's
-// default-device selection, which falls back to keyboard LEDs when no
-// backlight exists — on this desktop that lit up a phantom 0% widget (and
-// would have spammed the OSD). The probe scans /sys/class/backlight
-// directly.
+// /sys/class/backlight — never trust brightnessctl's default-device
+// selection, which falls back to keyboard LEDs and lit up a phantom 0%
+// widget on this desktop).
 //
-// Change detection: a native FileView watch (inotify) on the backlight's
-// brightness file — event-driven and instant. This replaces the original
-// 500ms poll; verified working on sysfs with kernel 7.1.8 (the plan's
-// old note that FileView is "HEAD-only" / can't watch sysfs was wrong on
-// both counts — see the audit). A 2s safety poll remains as insurance for
-// kernels where sysfs inotify is inert: whenever the watch fires first it
-// is a no-op re-read of the same value. The initial reading comes from
-// FileView's onLoaded (file-read completion — not inotify-dependent), so
-// it works on every kernel.
-// brightnessctl has no change-watch mode (`-m monitor` is the `max`
-// operation — verified 2026-08-13 against the binary and the source).
+// Phase 5.1 (efficiency/portability review): reads are fully native. A
+// FileView watches the device's brightness file (inotify on sysfs —
+// verified working on kernel 7.1.8 with a throwaway config + raw inotify
+// test), and percent is computed from the raw file contents vs the
+// device's max_brightness. No brightnessctl subprocess is needed to read
+// (text() on a sysfs file is a microsecond blocking read), so the shell
+// works on machines where brightnessctl isn't installed. The old 2s
+// brightnessctl safety poll is gone: it was 0.5 spawn/s forever guarding
+// an unverified "sysfs inotify is inert" failure mode. The bar widget
+// still uses brightnessctl to *write* (udev permissions).
 pragma Singleton
 
 import Quickshell
@@ -33,6 +30,9 @@ Singleton {
 
     /// Brightness file of the first real backlight device, "" when none.
     property string backlightPath: ""
+    /// max_brightness of the same device (static).
+    readonly property string maxPath: root.backlightPath.length > 0
+        ? root.backlightPath.replace(/\/brightness$/, "/max_brightness") : ""
 
     Process {
         id: probeProc
@@ -45,42 +45,40 @@ Singleton {
         }
     }
 
-    // Native change watcher (inotify on the file; its directory watch also
-    // re-arms on device recreate). Values are read via brightnessctl below
-    // — FileView is purely the trigger.
+    // Native change watcher: inotify on the brightness file. preload loads
+    // once asynchronously; onLoaded covers the initial value without
+    // depending on inotify (first reading is never late).
+    //
+    // IMPORTANT (verified 2026-08-13 with a throwaway config): the watcher
+    // does NOT refresh the internal buffer on fileChanged — text() would
+    // return the stale cached value. Call reload() on fileChanged and read
+    // the fresh value from the internalTextChanged/loaded signals (both
+    // fire after the async re-read; updates are idempotent).
     FileView {
         id: watch
         path: root.backlightPath
         preload: true
         watchChanges: true
-        onLoaded: root.pollProc.running = true // initial read once a device exists
-        onFileChanged: root.pollProc.running = true
+        onLoaded: root.update()
+        onFileChanged: watch.reload()
+        onInternalTextChanged: root.update()
     }
 
-    Process {
-        id: pollProc
-
-        command: ["brightnessctl", "-m", "get"]
-        running: false
-
-        stdout: StdioCollector {
-            onStreamFinished: {
-                // "Device,Class,percent,value" — take the first line.
-                const line = this.text.trim().split("\n")[0];
-                const parts = line ? line.split(",") : [];
-                root.percent = parts.length >= 3 ? (parseInt(parts[2]) || 0) : -1;
-            }
-        }
+    // Static device max — read once (the buffer never changes after the
+    // initial preload; text() returns it on demand).
+    FileView {
+        id: maxView
+        path: root.maxPath
+        preload: true
+        onLoaded: root.update()
     }
 
-    // Safety net for kernels without sysfs inotify support (rare; the
-    // watch fires first on modern kernels, making this a no-op re-read).
-    Timer {
-        id: safety
-        interval: 2000
-        repeat: true
-        running: root.backlightPath !== ""
-        onTriggered: pollProc.running = true
+    function update(): void {
+        if (root.backlightPath === "") return;
+        const raw = parseInt(String(watch.text()).trim(), 10);
+        const max = parseInt(String(maxView.text()).trim(), 10);
+        root.percent = max > 0 && !isNaN(raw)
+            ? Math.max(0, Math.min(100, Math.round(100 * raw / max))) : -1;
     }
 
     Component.onCompleted: probeProc.running = true

@@ -26,7 +26,8 @@ Rectangle {
 
         Text {
             Layout.alignment: Qt.AlignHCenter
-            text: Qt.formatDateTime(clock.date, "HH")
+            // SystemClock exposes hours/minutes directly — no format call.
+            text: String(clock.hours).padStart(2, "0")
             color: Theme.fg
             font.family: Theme.fontFamily
             font.pixelSize: Theme.fontSize
@@ -35,7 +36,7 @@ Rectangle {
 
         Text {
             Layout.alignment: Qt.AlignHCenter
-            text: Qt.formatDateTime(clock.date, "mm")
+            text: String(clock.minutes).padStart(2, "0")
             color: Theme.fgDim
             font.family: Theme.fontFamily
             font.pixelSize: Theme.fontSize

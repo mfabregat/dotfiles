@@ -23,13 +23,16 @@ Singleton {
     property var prevStats: ({})
 
     // ── Polling ────────────────────────────────────────────────────────
+    // One `cat` per tick (sh + cat = 2 forks) instead of the old pipeline
+    // (sh + grep + awk + N×cat + sort + tail ≈ 10 forks/s with 6 sensors).
+    // The parser below splits the concatenated streams: /proc/stat lines,
+    // the MemTotal/MemAvailable lines, and raw hwmon millidegrees.
     Process {
         id: pollProc
 
         command: [
             "sh", "-c",
-            "grep '^cpu' /proc/stat; awk '/MemTotal|MemAvailable/ {print $2}' /proc/meminfo;"
-            + " for f in /sys/class/hwmon/hwmon*/temp*_input; do cat \"$f\"; done | sort -n | tail -1"
+            "cat /proc/stat /proc/meminfo /sys/class/hwmon/hwmon*/temp*_input 2>/dev/null"
         ]
         running: true
 
@@ -75,10 +78,12 @@ Singleton {
 
     // ── Parsing ────────────────────────────────────────────────────────
     // Output: "cpu ..." + "cpuN ..." lines, then MemTotal/MemAvailable,
-    // then the hottest hwmon temperature (millidegrees).
+    // then raw hwmon millidegrees (one per line). The hottest sensor wins
+    // (machine-agnostic — no per-machine hwmon path).
     function parse(text: string): void {
         const lines = text.trim().split("\n");
-        const nums = [];
+        const nums = [];     // MemTotal, MemAvailable
+        const temps = [];    // hwmon raw millidegrees
         const coreList = [];
 
         for (const line of lines) {
@@ -99,19 +104,24 @@ Singleton {
 
                 if (parts[0] === "cpu") root.cpu = pct;
                 else coreList.push(pct);
+            } else if (/^Mem(?:Total|Available):\s*\d+/.test(trimmed)) {
+                const m = trimmed.match(/\d+/);
+                if (m) nums.push(parseInt(m[0]) || 0);
             } else if (/^\d+$/.test(trimmed)) {
-                nums.push(parseInt(trimmed) || 0);
+                temps.push(parseInt(trimmed) || 0);
             }
         }
 
         root.cores = coreList;
-        if (nums.length >= 3) {
+        if (nums.length >= 2) {
             const memTotal = nums[0];
             const memAvail = nums[1];
             if (memTotal > 0) {
                 root.mem = Math.min(100, Math.max(0, (1 - memAvail / memTotal) * 100));
             }
-            root.temp = nums[2] / 1000;
+        }
+        if (temps.length > 0) {
+            root.temp = Math.max(...temps) / 1000;
         }
 
         // History (sparklines): keep the last `historyLen` samples

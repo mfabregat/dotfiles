@@ -3,7 +3,6 @@
 import Quickshell
 import Quickshell.Services.SystemTray
 import QtQuick
-import QtQuick.Layouts
 import qs
 import qs.popups
 
@@ -15,8 +14,8 @@ Item {
     readonly property int shown: Math.min(SystemTray.items.values.length, 4)
 
     width: Theme.widgetWidth
-    // Layouts honor Layout.preferredHeight (bound `height` gets overridden)
-    Layout.preferredHeight: shown * 23
+    // Sized by `height`: the parent is a plain Column (not a Layout), so
+    // Layout.preferredHeight would be ignored here.
     height: shown * 23
     clip: true // overflow (5+ items) is hidden, never overlaps the clock
 

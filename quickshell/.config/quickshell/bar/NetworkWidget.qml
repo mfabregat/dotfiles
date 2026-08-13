@@ -26,10 +26,17 @@ Rectangle {
         return null;
     }
 
-    function findActive(devices: var, networks: var): var {
+    function findActive(devices: var, wifiNets: var): var {
+        // Connected wifi first (the usual case; one scan, no duplicates).
+        for (let i = 0; i < wifiNets.length; i++) {
+            if (wifiNets[i].connected) return wifiNets[i];
+        }
+        // Then any device's own connected network (ethernet, ...). The old
+        // `i === 0 ? networks : d.networks.values` hack never scanned the
+        // ethernet device's networks when a wifi device existed — wired-only
+        // connections showed as disconnected.
         for (let i = 0; i < devices.length; i++) {
-            const d = devices[i];
-            const nets = i === 0 ? networks : d.networks.values;
+            const nets = devices[i].networks.values;
             for (let j = 0; j < nets.length; j++) {
                 if (nets[j].connected) return nets[j];
             }

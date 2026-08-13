@@ -8,6 +8,7 @@
 // origin, so the visual strip spans [x-height, x] × [y, y+width]).
 import Quickshell
 import Quickshell.Services.Mpris
+import Quickshell.Wayland
 import QtQuick
 import QtQuick.Layouts
 import qs
@@ -173,16 +174,23 @@ Rectangle {
     }
 
 
-    // Replaces the old player_focus.sh: raise the window via MPRIS and
-    // focus it through sway (works even when raise() is unsupported).
+    // Replaces the old player_focus.sh: raise via MPRIS, then focus the
+    // matching toplevel through wlr-foreign-toplevel (native, no
+    // pgrep/swaymsg subprocess). Match the player's desktopEntry against
+    // the toplevel's appId (exact first, then substring both ways).
     function focusPlayerWindow(): void {
         if (!root.player) return;
         if (root.player.canRaise) root.player.raise();
 
-        const name = root.player.dbusName.split(".").pop();
-        Quickshell.execDetached([
-            "sh", "-c",
-            `pgrep -x ${name} | head -1 | xargs -r -I{} swaymsg "[pid={}] focus" >/dev/null 2>&1`
-        ]);
+        const appId = (root.player.desktopEntry || "").toLowerCase();
+        if (!appId) return;
+        const tops = ToplevelManager.toplevels.values;
+        for (let i = 0; i < tops.length; i++) {
+            const tid = (tops[i].appId || "").toLowerCase();
+            if (tid === appId || tid.includes(appId) || appId.includes(tid)) {
+                tops[i].activate();
+                return;
+            }
+        }
     }
 }
