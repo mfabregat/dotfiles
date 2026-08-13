@@ -1,0 +1,53 @@
+#!/bin/sh
+# Launch Spotify and immediately close its window so it keeps running in the
+# background (tray).  This replicates the manual workflow of starting Spotify
+# and closing the window.
+#
+# Logs to /tmp/spotify-bg.log for debugging.
+
+LOG="/tmp/spotify-bg.log"
+
+log() {
+	printf '%s %s\n' "$(date '+%Y-%m-%d %H:%M:%S')" "$*" >>"$LOG"
+}
+
+log "--- spotify-bg started ---"
+
+# Avoid duplicate launches (e.g. on sway reload).  flatpak ps is the most
+# reliable way to see whether the Flatpak app is already alive.
+if flatpak ps 2>/dev/null | grep -q "com.spotify.Client"; then
+	log "Spotify already running (flatpak ps), exiting."
+	exit 0
+fi
+
+# Also guard against a spotify process visible on the host (fallback).
+if pgrep -x "spotify" >/dev/null 2>&1; then
+	log "Spotify already running (pgrep), exiting."
+	exit 0
+fi
+
+log "Launching Spotify..."
+flatpak run com.spotify.Client &
+SPOTIFY_PID=$!
+log "Spotify PID: $SPOTIFY_PID"
+
+# Wait for the Spotify window to appear (up to ~30 s).
+log "Waiting for window (app_id=spotify)..."
+i=0
+while [ "$i" -lt 1000 ]; do
+	i=$((i + 1))
+	if swaymsg -t get_tree | grep -q '"app_id": "spotify"'; then
+		log "Window detected (iteration $i)."
+		# Give Spotify a moment to finish initialising before we close it;
+		# killing too early can leave the window alive or make Spotify reopen it.
+		sleep 0.01
+		log "Sending kill command..."
+		swaymsg '[app_id=spotify] kill'
+		log "Kill command executed."
+		exit 0
+	fi
+	sleep 0.01
+done
+
+log "ERROR: timed out waiting for Spotify window."
+exit 1

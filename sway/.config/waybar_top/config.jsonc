@@ -6,9 +6,10 @@
         //     "HDMI-A-1"
         // ],
         "layer": "top", // Waybar at top layer
-        "position": "right", // Waybar position (top|bottom|left|right)
-        // Vertical right bar: multi-line formats (e.g. {:%H}\n{:%M}) are used
-        // intentionally; GTK CSS has no line-height property.
+        "position": "top", // Waybar position (top|bottom|left|right)
+        // Formats are wrapped in … to compress the font's
+        // line height inside each pill (GTK CSS has no line-height property).
+        // Tune per module: 0.75 is the floor, 0.85 is safer.
         // "width": 1280, // Waybar width
         "spacing": 4, // Gaps between modules (4px)
         // "margin-top": -6,
@@ -22,19 +23,21 @@
             "mpris",
         ],
         "modules-center": [
-            "wlr/taskbar"
-            // "sway/window",
+            "wlr/taskbar",
+            "sway/window",
         ],
         "modules-right": [
             // "load",
-            "group/status",
+            "cpu",
+            "memory",
+            "temperature",
             "wireplumber",
             "backlight",
-            // "sway/language",
-            "network",
-            "tray",
-            "battery",
+            "sway/language",
             "clock",
+            "battery",
+            "tray",
+            "network",
             "custom/power"
         ],
         // Modules configuration
@@ -45,8 +48,7 @@
         },
         "sway/mode": {
             "format": "{}",
-            "tooltip": false,
-            "rotate": 270
+            "tooltip": false
         },
         "sway/scratchpad": {
             "format": "{count}",
@@ -56,12 +58,10 @@
         },
         "sway/window": {
             "format": "{title}",
-            // Vertical bar: read the title top-to-bottom (GTK angles are counterclockwise)
-            "rotate": 270,
             "tooltip": false,
             // "max-length": 100,
             "all-outputs": false, // only windows on this bar's output
-            "icon": false,
+            "icon": true,
             "icon-size": 14
             // "expand": true
         },
@@ -69,7 +69,7 @@
             "all-outputs": true,
             "format": "{icon}",
             "icon-size": 14,
-            // "icon-theme": "Numix-Circle",
+            "icon-theme": "Numix-Circle",
             "tooltip-format": "{title}",
             "on-click": "activate",
             "on-click-middle": "close",
@@ -77,7 +77,7 @@
                 "Alacritty"
             ],
             "app_ids-mapping": {
-                "firefoxdeveloperedition": "firefox-developer-edition",
+                "firefoxdeveloperedition": "firefox-developer-edition"
             },
             "rewrite": {
                 "Firefox Web Browser": "Firefox",
@@ -85,34 +85,38 @@
             }
         },
         "mpris": {
-            "player": "spotify",
-            "format": " {dynamic}",
-            // Vertical bar: read the track info top-to-bottom
-            "rotate": 270,
+            // "player": "spotify",
+            "format": "{player_icon} {dynamic}",
             "interval": 1,
-            "title-len": 30,
-            "artist-len": 25,
+            "dynamic-len": 60,
+            "status-icons": {
+                "playing": "▶",
+                "paused": "⏸",
+                "stopped": ""
+            },
+            "player-icons": {
+                "spotify": "",
+                "default": ""
+            },
             "dynamic-order": [
                 "title",
                 "artist"
             ],
-            // "ignored-players": [
-            //     "firefox"
-            // ],
+            "ignored-players": [
+                "firefox"
+            ],
             "tooltip": false,
-            "on-click-middle": "flatpak run com.spotify.Client",
+            "on-click-middle": "/home/marc/.config/waybar/player_focus.sh",
         },
         "load": {
             "format": " {}"
         },
         "wireplumber": {
             "scroll-step": 5, // %, can be a float
-            // No native vertical bar; stack the icon above the percentage
-            "format": "{icon}",
-            "format-bluetooth": "{icon}\n{volume}% ",
-            "format-bluetooth-muted": "{icon}\n",
-            "format-muted": "\n0%",
-            "justify": "center",
+            "format": "{volume}% {icon}",
+            "format-bluetooth": "{icon} {volume}% ",
+            "format-bluetooth-muted": " {icon}",
+            "format-muted": " 0%",
             "format-icons": {
                 "headphone": "",
                 "hands-free": "", // F590 headset is FA6-only
@@ -121,22 +125,10 @@
                 "portable": "",
                 "car": "",
                 "default": [
-                    "\n<span foreground='#282828'>█</span>\n▁",
-                    "\n<span foreground='#282828'>█</span>\n▂",
-                    "\n<span foreground='#282828'>█</span>\n▃",
-                    "\n<span foreground='#282828'>█</span>\n▄",
-                    "\n<span foreground='#282828'>█</span>\n▅",
-                    "\n<span foreground='#282828'>█</span>\n▆",
-                    "\n<span foreground='#282828'>█</span>\n▇",
-                    "\n<span foreground='#282828'>█</span>\n█",
-                    "\n▁\n█",
-                    "\n▂\n█",
-                    "\n▃\n█",
-                    "\n▄\n█",
-                    "\n▅\n█",
-                    "\n▆\n█",
-                    "\n▇\n█",
-                    "\n█\n█"
+                    "",
+                    "",
+                    "",
+                    ""
                 ]
             },
             "tooltip": false,
@@ -178,10 +170,7 @@
             "on-click": "swaymsg input type:keyboard xkb_switch_layout next",
         },
         "clock": {
-            // Vertical bar: hours on top (bold), minutes on bottom.
-            // Explicit arg-id needed: two implicit {} replacements trip fmt.
-            "format": "<b>{0:%H}</b>\n{0:%M}",
-            "justify": "center",
+            "format": "{:%H:%M}",
             "tooltip-format": "<tt>{calendar}</tt>",
             "calendar": {
                 "format": {
@@ -216,54 +205,37 @@
                 ""
             ]
         },
-        // Group the three status modules into a single unit. Each child keeps
-        // its own id/state styling (#cpu.warning, #memory.critical, ...).
-        "group/status": {
-            "orientation": "inherit", // vertical, like the bar
-            "modules": [
-                "cpu",
-                "memory",
-                "temperature"
-            ]
-        },
         "cpu": {
-            // Rely on state coloring; the numbers live in the tooltip
-            "format": "",
+            "format": "{usage}% ",
             "states": {
                 "warning": 70,
                 "critical": 90
             },
-            "tooltip": true,
-            "tooltip-format": "{usage}%  Load {load1:.2f} {load5:.2f} {load15:.2f}\n{avg_frequency:.0f} MHz avg"
+            "tooltip": true
         },
         "memory": {
-            // Rely on state coloring; the numbers live in the tooltip
-            "format": "",
+            "format": "{}% ",
             "states": {
                 "warning": 70,
                 "critical": 90
-            },
-            "tooltip": true,
-            "tooltip-format": "{used:0.1f}GiB / {total:0.1f}GiB ({percentage}%)\nSwap: {swapUsed:0.1f}GiB / {swapTotal:0.1f}GiB"
+            }
         },
         "temperature": {
             // "thermal-zone": 2,
             "hwmon-path": "/sys/class/hwmon/hwmon1/temp1_input",
             "warning-threshold": 60,
             "critical-threshold": 80,
-            // Rely on icon + state coloring; the numbers live in the tooltip
-            "format": "{icon}",
+            // "format-critical": "{temperatureC}°C {icon}",
+            "format": "{temperatureC}°C {icon}",
             "format-icons": [
                 "",
                 "",
                 ""
-            ], // FA4-safe (FA5/6-only glyphs were broken)
-            "tooltip": true,
-            "tooltip-format": "{temperatureC}°C ({temperatureF}°F)"
+            ] // FA4-safe (FA5/6-only glyphs were broken)
         },
         "tray": {
             "icon-size": 14,
-            "spacing": 4
+            "spacing": 10
         },
         "network": {
             // "interface": "wlp2s0",

@@ -11,7 +11,7 @@
  *   - Private repos require the `gh` CLI.
  *   - Clones are cached for the session and wiped on session change.
  *   - `githubClone.enabled: false` skips this handling entirely so the URL
- *     falls through to the normal HTTP extraction path (TinyFish).
+ *     falls through to the normal HTTP extraction path (lightweight fetch).
  */
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";

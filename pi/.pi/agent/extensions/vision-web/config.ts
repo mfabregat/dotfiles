@@ -40,8 +40,15 @@ export interface Config {
   maxPdfBytes: number;
   /** GitHub repo handling (clone-first, API for oversized/SHA/private). */
   githubClone: GitHubCloneConfig;
-  /** Optional literal key overrides; prefer auth.json. */
-  tinyfishApiKey?: string;
+  /** SearXNG instance base URL, e.g. "http://localhost:8080". */
+  searxngBaseUrl?: string;
+  /** Spin up a local Docker container on demand when searxngBaseUrl is not set. */
+  searxngDockerEnabled?: boolean;
+  /** Host port mapped to the SearXNG container (default 18765). */
+  searxngDockerPort?: number;
+  /** Minutes to keep the container alive after the last search (default 5). */
+  searxngDockerIdleMinutes?: number;
+  /** Optional literal key override; prefer auth.json. */
   geminiApiKey?: string;
 }
 
@@ -58,6 +65,9 @@ const DEFAULTS: Config = {
   maxUploadBytes: 512 * 1024 * 1024,
   maxPdfBytes: 15 * 1024 * 1024,
   githubClone: { enabled: true, maxRepoSizeMB: 350, forceClone: false },
+  searxngDockerEnabled: false,
+  searxngDockerPort: 18765,
+  searxngDockerIdleMinutes: 5,
 };
 
 export function configPath(): string {
@@ -93,7 +103,10 @@ export function loadConfig(): Config {
       if (typeof gc.maxRepoSizeMB === "number" && gc.maxRepoSizeMB > 0) base.githubClone.maxRepoSizeMB = Math.floor(gc.maxRepoSizeMB);
       if (typeof gc.forceClone === "boolean") base.githubClone.forceClone = gc.forceClone;
     }
-    if (typeof raw.tinyfishApiKey === "string" && raw.tinyfishApiKey.trim()) base.tinyfishApiKey = raw.tinyfishApiKey.trim();
+    if (typeof raw.searxngBaseUrl === "string" && raw.searxngBaseUrl.trim()) base.searxngBaseUrl = raw.searxngBaseUrl.trim();
+    if (typeof raw.searxngDockerEnabled === "boolean") base.searxngDockerEnabled = raw.searxngDockerEnabled;
+    if (typeof raw.searxngDockerPort === "number" && raw.searxngDockerPort > 0) base.searxngDockerPort = Math.floor(raw.searxngDockerPort);
+    if (typeof raw.searxngDockerIdleMinutes === "number" && raw.searxngDockerIdleMinutes > 0) base.searxngDockerIdleMinutes = Math.floor(raw.searxngDockerIdleMinutes);
     if (typeof raw.geminiApiKey === "string" && raw.geminiApiKey.trim()) base.geminiApiKey = raw.geminiApiKey.trim();
   } catch {
     // Malformed config: fall back to defaults.

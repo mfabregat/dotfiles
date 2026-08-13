@@ -29,8 +29,8 @@
 
 * {
     font-size: 14px;
-    /* vertical bar on the right edge: pills float with 4px gaps */
-    border-radius: 10px;
+    /* border-radius: 5px 5px 0 0; */
+    border-radius: 5px;
 }
 
 window#waybar {
@@ -41,8 +41,7 @@ window#waybar {
        `fonts-font-awesome` (FontAwesome 4) is also required. */
     font-family: "NotoSans Nerd Font Propo", FontAwesome, monospace;
     background-color: transparent;
-    border-right: 0px;
-    /* vertical bar: no border on the screen edge */
+    border-bottom: 0px;
     color: @light0;
     transition-property: background-color;
     transition-duration: .5s;
@@ -65,18 +64,16 @@ window#waybar.empty {
 }
 */
 
-/* Vertical bar on the right edge: modules-left sits at the top,
-   modules-center in the middle, modules-right at the bottom. */
 .modules-right {
-    margin: 0 4px 4px 0;
+    margin: 4px 4px 0 0;
 }
 
 .modules-center {
-    margin: 0 4px 0 0;
+    margin: 4px 0 0 0;
 }
 
 .modules-left {
-    margin: 4px 4px 0 0;
+    margin: 4px 0 0 4px;
 }
 
 button {
@@ -104,11 +101,11 @@ button:hover {
 }
 
 #workspaces button:first-child {
-    border-radius: 5px 5px 0 0;
+    border-radius: 5px 0 0 5px;
 }
 
 #workspaces button:last-child {
-    border-radius: 0 0 5px 5px;
+    border-radius: 0 5px 5px 0;
 }
 
 #workspaces button:hover {
@@ -135,42 +132,21 @@ button:hover {
 #wireplumber,
 #tray,
 #load,
-/* #cpu,
+#cpu,
 #memory,
-#temperature, */
-#status,
+#temperature,
 #custom-power,
 #network,
 #language {
-    /* vertical bar: a little vertical padding between the stacked pills */
-    padding: 4px 0px;
+    padding: 0 10px;
     background-color: @dark0;
     color: @light0;
 }
 
 #taskbar {
-    /* padding: 3px 0; */
+    padding: 0 4px;
     background-color: @dark0;
     color: @light0;
-}
-
-/* Vertical bar: each taskbar button packs empty before/after labels that
-   reserve a phantom line-height, inflating button height. Collapse them. */
-#taskbar label {
-    font-size: 0;
-}
-
-/* GtkButton hands its child the full inner allocation (top-aligned, not
-   centered), so the icon hugged the button's theme min-height (24px) and sat
-   a couple px high. Keep the theme padding for size, but drop the min-height
-   so the button is exactly icon + padding tall and the icon centers itself. */
-#taskbar button {
-    min-height: 0;
-    padding: 6px 0;
-}
-
-#taskbar button.active {
-    background-color: @dark4;
 }
 
 #taskbar.empty {
@@ -235,7 +211,7 @@ label:focus {
 }
 
 #mpris {
-    padding: 6px 0px;
+    padding: 0 10px;
     background-color: @dark4;
     color: @light0;
 }

@@ -14,5 +14,8 @@
     "enabled": true,
     "maxRepoSizeMB": 350,
     "forceClone": false
-  }
+  },
+  "searxngDockerEnabled": true,
+  "searxngDockerPort": 18765,
+  "searxngDockerIdleMinutes": 5
 }

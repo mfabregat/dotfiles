@@ -15,7 +15,6 @@
 player=$(playerctl metadata --format '{{playerName}}' 2>/dev/null) || exit 0
 [ -n "$player" ] || exit 0
 
-
 # 1. Focus an existing window by pid.
 pid=$(pgrep -x "$player" | head -1)
 if [ -n "$pid" ] && swaymsg "[pid=$pid] focus" >/dev/null 2>&1; then

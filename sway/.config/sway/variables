@@ -13,8 +13,9 @@ set $right l
 set $term ghostty
 
 # Your preferred application launcher
-
-set $menu wmenu-run
+# Modes are enforced on the command line so the order (apps, ssh, run)
+# always wins over any config-file oddities.
+set $menu --no-startup-id rofi -show drun -modes "drun,ssh,run"
 
 # set $browser brave-browser
 set $browser firefox

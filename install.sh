@@ -97,10 +97,6 @@ cd ~/dotfiles
 stow gruvbox_gtk
 # Then open gnome-tweaks and select the theme
 # Finally copy only assets, gtk.css and gtk-dark.css to ~/.config/gtk-4.0
-sudo flatpak override --filesystem=$HOME/.themes
-sudo flatpak override --filesystem=$HOME/.icons
-flatpak override --user --filesystem=xdg-config/gtk-4.0
-sudo flatpak override --filesystem=xdg-config/gtk-4.0
 ln -s ~/.themes/Gruvbox-BL-MB-Dark ~/.local/share/themes/Gruvbox-BL-MB-Dark # is this necessary?
 
 

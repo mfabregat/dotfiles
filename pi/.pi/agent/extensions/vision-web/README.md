@@ -3,11 +3,11 @@
 Combined **vision handoff** (pi-vision-handoff) + **web access** (simplified pi-web-access) for pi.
 
 - **Vision handoff** — text-only models get images described by the Gemini API (direct REST call, no pi provider registry needed). Works for attached images (`pi --image`) and images the agent `read`s.
-- **Web search** — TinyFish (Gemini's free tier has no web search). Deliberately minimal: one provider, easy to add more later.
+- **Web search** — SearXNG (self-hosted meta-search engine). No API key required for your own instance.
 - **URL / media fetch** — one `fetch_url` tool that routes:
   | target | engine |
   |---|---|
-  | web page | TinyFish markdown extraction |
+  | web page | lightweight HTML-to-text parser |
   | GitHub repo/file/tree | clone-first: shallow `git clone` + **local path for read/bash exploration**; API view for repos > `maxRepoSizeMB` (or commit SHAs / private without `gh`); raw/API fallback if clone fails |
   | YouTube URL | Gemini video understanding (no yt-dlp needed) |
   | PDF (URL or local) | Gemini text extraction (no unpdf needed) |
@@ -18,14 +18,12 @@ Combined **vision handoff** (pi-vision-handoff) + **web access** (simplified pi-
 ```json
 // ~/.pi/agent/auth.json
 {
-  "google":   { "type": "api_key", "key": "AIza..." },
-  "tinyfish": { "type": "api_key", "key": "tf-..." }
+  "google": { "type": "api_key", "key": "AIza..." }
 }
 ```
 
 - `google` is pi's **native** Gemini key id — pi itself picks it up too (Gemini models appear in `/model`).
-- `tinyfish` is a custom key: pi ignores unknown keys but **preserves them** (its auth store is merge-based).
-- Env fallbacks: `GEMINI_API_KEY`, `TINYFISH_API_KEY`.
+- Env fallback: `GEMINI_API_KEY`.
 
 ## Config — `~/.pi/agent/extensions/vision-web/config.json`
 
@@ -42,18 +40,22 @@ Combined **vision handoff** (pi-vision-handoff) + **web access** (simplified pi-
 | `videoMethod` | `auto` | `auto` (ffmpeg frames if installed, else upload) · `frames` · `upload` |
 | `maxUploadBytes` | 512MB | local video upload cap |
 | `maxPdfBytes` | 15MB | PDF size cap (Gemini inline limit) |
+| `searxngBaseUrl` | — | SearXNG instance URL, e.g. `"http://localhost:8080"` |
+| `searxngDockerEnabled` | `false` | Spin up a local Docker container on demand when `searxngBaseUrl` is not set |
+| `searxngDockerPort` | `18765` | Host port mapped to the container |
+| `searxngDockerIdleMinutes` | `5` | Minutes to keep the container alive after the last search |
 | `githubClone.enabled` | `true` | `false` = skip GitHub handling; URL falls through to normal HTTP extraction |
 | `githubClone.maxRepoSizeMB` | `350` | bigger repos get the lightweight API view instead of a clone |
 | `githubClone.forceClone` | `false` | force a full clone even for oversized repos |
 
 ## Tools
 
-- `web_search` — query, numResults (1-20), domainFilter (`-site` to exclude), recencyFilter (day/week/month/year), includeContent (fetch top pages as markdown).
+- `web_search` — query, numResults (1-20), domainFilter (`-site` to exclude), recencyFilter (day/week/month/year), includeContent (fetch top pages as text).
 - `fetch_url` — url (web/GitHub/YouTube/PDF/local video) + optional `question`, `timestamp` (`1:23:45`, `23:41-25:00`, or seconds), `frames` (1-12, for local videos with ffmpeg).
 
 ## Command
 
-- `/vision-web` — status: keys set?, model, handoff target, last error.
+- `/vision-web` — status: Gemini key set?, SearXNG configured?, model, handoff target, last error.
 
 ## Optimizations
 

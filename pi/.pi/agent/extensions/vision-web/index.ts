@@ -3,12 +3,12 @@
  *
  * - Vision handoff: text-only models get images described by the Gemini API
  *   (direct REST call, no pi provider registry needed).
- * - Web search + URL fetch via TinyFish.
+ * - Web search via a self-hosted SearXNG instance.
+ * - URL fetch via a lightweight HTML-to-text parser.
  *
  * Keys (centralized in ~/.pi/agent/auth.json):
- *   { "google":   { "type": "api_key", "key": "AIza..." },
- *     "tinyfish": { "type": "api_key", "key": "tf-..." } }
- * Env fallbacks: GEMINI_API_KEY, TINYFISH_API_KEY.
+ *   { "google": { "type": "api_key", "key": "AIza..." } }
+ * Env fallback: GEMINI_API_KEY.
  *
  * Config: ~/.pi/agent/extensions/vision-web/config.json
  */
@@ -16,8 +16,8 @@ import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
 import { Type } from "typebox";
 import { readFile } from "node:fs/promises";
 import { loadConfig, type Config } from "./config.js";
-import { resolveCredential, getAgentDir } from "./auth.js";
-import { tinyfishSearch, tinyfishFetch } from "./tinyfish.js";
+import { getAgentDir } from "./auth.js";
+import { searxngSearch, fetchWebPage, ensureDockerSearxng, scheduleDockerStop, shutdownDockerSearxng } from "./searxng.js";
 import { withTimeout } from "./gemini.js";
 import { extractGitHub, wipeCloneCache } from "./github.js";
 import { analyzeYouTubeUrl, analyzeLocalVideo, extractPdfText, parseYouTubeUrl, classifyFetchTarget } from "./media.js";
@@ -45,19 +45,14 @@ export default function (pi: ExtensionAPI) {
   pi.on("session_shutdown", () => {
     handoff.dispose();
     wipeCloneCache();
+    shutdownDockerSearxng().catch(() => {});
   });
 
   pi.on("session_start", async (_event, ctx) => {
     if (!config.enabled) return;
-    const [gemini, tinyfish] = await Promise.all([
-      handoff.geminiKey(),
-      resolveCredential({ authKey: "tinyfish", envVar: "TINYFISH_API_KEY", configValue: config.tinyfishApiKey }),
-    ]);
-    if (ctx.hasUI && (!gemini || !tinyfish)) {
-      const missing = [gemini ? null : "google/GEMINI_API_KEY", tinyfish ? null : "tinyfish/TINYFISH_API_KEY"]
-        .filter((x): x is string => x !== null)
-        .join(", ");
-      ctx.ui.notify(`vision-web: missing API keys — ${missing}. Add them to ${getAgentDir()}/auth.json`, "info");
+    const gemini = await handoff.geminiKey();
+    if (ctx.hasUI && !gemini) {
+      ctx.ui.notify(`vision-web: missing Gemini API key. Add { "google": { "type": "api_key", "key": "..." } } to ${getAgentDir()}/auth.json or set GEMINI_API_KEY.`, "info");
     }
   });
 
@@ -67,7 +62,7 @@ export default function (pi: ExtensionAPI) {
     name: "web_search",
     label: "Web Search",
     description:
-      "Search the web using TinyFish. Returns an AI-synthesized answer plus ranked results with title, URL, and snippet. Optionally fetch page content for the top results.",
+      "Search the web using a self-hosted SearXNG instance. Returns ranked results with title, URL, and snippet. Optionally fetch page content for the top results.",
     promptSnippet: "Search the web for: ",
     parameters: Type.Object({
       query: Type.String({ description: "Search query. Use 2-4 varied angles for broad coverage." }),
@@ -86,17 +81,21 @@ export default function (pi: ExtensionAPI) {
       ),
     }),
     async execute(_toolCallId, params, signal, _onUpdate, ctx) {
-      const apiKey = await resolveCredential({
-        authKey: "tinyfish",
-        envVar: "TINYFISH_API_KEY",
-        configValue: config.tinyfishApiKey,
-      });
-      if (!apiKey) {
+      let baseUrl = config.searxngBaseUrl;
+      let dockerStarted = false;
+      if (!baseUrl && config.searxngDockerEnabled) {
+        const dockerUrl = await ensureDockerSearxng(config.searxngDockerPort ?? 18765, signal);
+        if (dockerUrl) {
+          baseUrl = dockerUrl;
+          dockerStarted = true;
+        }
+      }
+      if (!baseUrl) {
         return {
           content: [
             {
               type: "text",
-              text: "Web search unavailable: TinyFish API key missing. Add { \"tinyfish\": { \"type\": \"api_key\", \"key\": \"...\" } } to auth.json or set TINYFISH_API_KEY.",
+              text: "Web search unavailable: searxngBaseUrl not configured. Add it to ~/.pi/agent/extensions/vision-web/config.json, e.g. { \"searxngBaseUrl\": \"http://localhost:8080\" } — or set { \"searxngDockerEnabled\": true } to spin up a local Docker container on demand.",
             },
           ],
           details: {},
@@ -114,8 +113,8 @@ export default function (pi: ExtensionAPI) {
         if (raw.trim().startsWith("-")) excludeDomains.push(raw.trim().slice(1));
         else includeDomains.push(raw.trim());
       }
-      const { answer, results } = await tinyfishSearch(params.query, {
-        apiKey,
+      const { answer, results } = await searxngSearch(params.query, {
+        baseUrl,
         numResults: params.numResults ?? config.searchDefaultNumResults,
         includeDomains: includeDomains.length > 0 ? includeDomains : undefined,
         excludeDomains: excludeDomains.length > 0 ? excludeDomains : undefined,
@@ -123,12 +122,16 @@ export default function (pi: ExtensionAPI) {
         signal,
       });
 
-      const lines = [`Search results for "${params.query}":`, "", answer];
+      if (dockerStarted) {
+        const idleMs = (config.searxngDockerIdleMinutes ?? 5) * 60 * 1000;
+        scheduleDockerStop("pi-searxng", idleMs);
+      }
+
+      const lines = [`Search results for "${params.query}"${dockerStarted ? ` (via local Docker)` : ""}:`, "", answer];
       let fetched = "";
       if (params.includeContent && results.length > 0) {
-        const pages = await tinyfishFetch(
-          results.slice(0, MAX_INLINE_FETCH_URLS).map((r) => r.url),
-          { apiKey, purpose: `Extract content relevant to: ${params.query}`, signal },
+        const pages = await Promise.all(
+          results.slice(0, MAX_INLINE_FETCH_URLS).map((r) => fetchWebPage(r.url, signal)),
         );
         const parts: string[] = [];
         for (const page of pages) {
@@ -148,7 +151,7 @@ export default function (pi: ExtensionAPI) {
     name: "fetch_url",
     label: "Fetch URL",
     description:
-      "Fetch content from a URL or local path. Handles: web pages (markdown via TinyFish), GitHub repositories (README/tree/file, via git clone), YouTube videos (Gemini video understanding), PDF files (Gemini text extraction), and local video files (ffmpeg frames or Gemini upload).",
+      "Fetch content from a URL or local path. Handles: web pages (lightweight HTML-to-text), GitHub repositories (README/tree/file, via git clone), YouTube videos (Gemini video understanding), PDF files (Gemini text extraction), and local video files (ffmpeg frames or Gemini upload).",
     promptSnippet: "Fetch the content of: ",
     parameters: Type.Object({
       url: Type.String({ description: "A web URL, GitHub URL, YouTube URL, PDF URL, or local file path." }),
@@ -249,28 +252,11 @@ export default function (pi: ExtensionAPI) {
         }
       }
 
-      // --- Web page (TinyFish) ------------------------------------------------
-      const apiKey = await resolveCredential({
-        authKey: "tinyfish",
-        envVar: "TINYFISH_API_KEY",
-        configValue: config.tinyfishApiKey,
-      });
-      if (!apiKey) {
-        return {
-          content: [
-            {
-              type: "text",
-              text: "Fetch unavailable: TinyFish API key missing. Add { \"tinyfish\": { \"type\": \"api_key\", \"key\": \"...\" } } to auth.json or set TINYFISH_API_KEY.",
-            },
-          ],
-          details: {},
-        };
-      }
+      // --- Web page (lightweight fetch) ---------------------------------------
       try {
-        const pages = await tinyfishFetch([target], { apiKey, purpose: params.question, signal });
-        const page = pages[0];
-        if (!page || page.error) {
-          return { content: [{ type: "text", text: `Failed to fetch ${target}: ${page?.error ?? "unknown error"}` }], details: {} };
+        const page = await fetchWebPage(target, signal);
+        if (page.error) {
+          return { content: [{ type: "text", text: `Failed to fetch ${target}: ${page.error}` }], details: {} };
         }
         const header = page.title ? `# ${page.title}\n\nSource: ${target}\n` : `Source: ${target}\n`;
         return { content: [{ type: "text", text: header + page.content.slice(0, MAX_FETCH_OUTPUT_CHARS) }], details: { url: page.url } };
@@ -424,16 +410,13 @@ export default function (pi: ExtensionAPI) {
   pi.registerCommand("vision-web", {
     description: "Show vision-web status: keys, model, handoff target.",
     handler: async (_args, ctx) => {
-      const [gemini, tinyfish] = await Promise.all([
-        handoff.geminiKey(),
-        resolveCredential({ authKey: "tinyfish", envVar: "TINYFISH_API_KEY", configValue: config.tinyfishApiKey }),
-      ]);
+      const gemini = await handoff.geminiKey();
       const current = ctx.model;
       const lines = [
         "vision-web status",
         `enabled: ${config.enabled}`,
         `geminiModel: ${config.geminiModel} (key: ${gemini ? "set" : "MISSING"})`,
-        `tinyfish: key ${tinyfish ? "set" : "MISSING"}`,
+        `searxng: ${config.searxngBaseUrl ?? (config.searxngDockerEnabled ? `docker (port ${config.searxngDockerPort})` : "not configured")}`,
         `handoff: auto=${config.autoHandoff} models=[${config.handoffModels.join(", ")}]`,
         `video: method=${config.videoMethod} model=${config.geminiModel}`,
         `current model: ${formatModelRef(current)} (${isVisionModel(current) ? "vision-capable" : "text-only"}) — handoff ${isHandoffTarget(current, config) ? "active" : "inactive"}`,
