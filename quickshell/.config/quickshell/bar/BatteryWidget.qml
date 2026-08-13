@@ -14,8 +14,8 @@ Rectangle {
     readonly property bool plugged: battery && battery.state === UPowerDeviceState.FullyCharged
     readonly property bool discharging: battery && battery.state === UPowerDeviceState.Discharging
 
-    width: 30
-    height: 36
+    width: Theme.widgetWidth
+    height: Theme.unit * 9
     radius: 7
     color: area.containsMouse ? Theme.bgHover : "transparent"
     // Hide phantom batteries (desktops: DisplayDevice reports 0%, not on battery)
@@ -42,7 +42,7 @@ Rectangle {
                  : percent <= 30 && discharging ? Theme.warn
                  : Theme.fg
             font.family: Theme.fontFamily
-            font.pixelSize: 14
+            font.pixelSize: Theme.fontSizeLarge
         }
 
         Text {
@@ -50,7 +50,7 @@ Rectangle {
             text: percent + "%"
             color: Theme.fgDim
             font.family: Theme.fontFamily
-            font.pixelSize: 9
+            font.pixelSize: Theme.fontSizeTiny
         }
     }
 

@@ -24,8 +24,8 @@ Column {
             readonly property bool mine: modelData.monitor === root.monitor
             readonly property bool focused: mine && modelData.focused
 
-            width: 28
-            height: mine ? 24 : 0
+            width: Theme.pillWidth
+            height: mine ? Theme.pillHeight : 0
             visible: mine
             radius: 6
             color: pillArea.containsMouse && mine ? Theme.bgHover
@@ -38,7 +38,7 @@ Column {
                 text: modelData.number
                 color: focused || (modelData.urgent && mine) ? Theme.dark0 : Theme.fgDim
                 font.family: Theme.fontFamily
-                font.pixelSize: 11
+                font.pixelSize: Theme.fontSizeSmall
                 font.bold: focused
             }
 

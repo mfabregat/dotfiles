@@ -11,8 +11,8 @@ Rectangle {
 
     readonly property int percent: Brightness.percent
 
-    width: 30
-    height: 36
+    width: Theme.widgetWidth
+    height: Theme.unit * 9
     radius: 7
     color: area.containsMouse ? Theme.bgHover : "transparent"
     visible: Brightness.available
@@ -27,7 +27,7 @@ Rectangle {
             text: ""
             color: percent < 40 ? Theme.fgDim : Theme.fg
             font.family: Theme.fontFamily
-            font.pixelSize: 14
+            font.pixelSize: Theme.fontSizeLarge
         }
 
         Text {
@@ -35,7 +35,7 @@ Rectangle {
             text: percent >= 0 ? percent + "%" : ""
             color: Theme.fgDim
             font.family: Theme.fontFamily
-            font.pixelSize: 9
+            font.pixelSize: Theme.fontSizeTiny
         }
     }
 

@@ -34,7 +34,8 @@ Rectangle {
     readonly property int maxArtistLen: 80
     readonly property real titleNatural: Math.min(titleText.implicitWidth, maxTitleLen)
     readonly property real artistNatural: Math.min(artistText.implicitWidth, maxArtistLen)
-    readonly property real availableLen: Math.max(0, root.freeSpace - 12 - iconText.implicitHeight)
+    readonly property real availableLen: Math.max(0, root.freeSpace
+        - 2 * Theme.widgetMargin - iconText.implicitHeight - Theme.spacing - Theme.widgetMargin)
 
     readonly property real titleLen: root.titleNatural + root.artistNatural <= root.availableLen
         ? root.titleNatural
@@ -45,9 +46,10 @@ Rectangle {
         ? root.artistNatural
         : Math.max(0, Math.min(root.artistNatural, root.availableLen - root.titleLen))
 
-    width: 30
+    width: Theme.widgetWidth
     // Sized by the layout to exactly this (no fill, no loop)
-    implicitHeight: 6 + iconText.implicitHeight + 3 + root.titleLen + 3 + root.artistLen
+    implicitHeight: 2 * Theme.widgetMargin + iconText.implicitHeight + Theme.spacing
+        + root.titleLen + Theme.widgetMargin + root.artistLen
     visible: hasPlayer
     radius: 7
     color: playing ? Theme.accent
@@ -68,8 +70,8 @@ Rectangle {
 
     ColumnLayout {
         anchors.fill: parent
-        anchors.margins: 3
-        spacing: 3
+        anchors.margins: Theme.widgetMargin
+        spacing: Theme.spacing
 
         Text {
             id: iconText
@@ -77,7 +79,7 @@ Rectangle {
             text: root.player ? (root.player.dbusName.toLowerCase().includes("spotify") ? "" : "") : ""
             color: root.playing ? Theme.bg : Theme.fgDim
             font.family: Theme.fontFamily
-            font.pixelSize: 15
+            font.pixelSize: Theme.fontSizeLarge
             Behavior on color { ColorAnimation { duration: 150 } }
         }
 
@@ -93,14 +95,14 @@ Rectangle {
                 rotation: 90
                 transformOrigin: Item.TopLeft // rotate around the origin, not the center
                 width: root.titleLen
-                height: 17
-                x: 21 // visual strip spans [4, 21] (centered in the 24px content)
+                height: Theme.titleStrip
+                x: Math.round((Theme.widgetWidth - 2 * Theme.widgetMargin + Theme.titleStrip) / 2)
                 y: 0
                 elide: Text.ElideRight
                 text: root.player ? root.player.trackTitle || "" : ""
                 color: root.playing ? Theme.bg : Theme.fg
                 font.family: Theme.fontFamily
-                font.pixelSize: 14
+                font.pixelSize: Theme.fontSize
                 Behavior on color { ColorAnimation { duration: 150 } }
             }
 
@@ -109,14 +111,14 @@ Rectangle {
                 rotation: 90
                 transformOrigin: Item.TopLeft // rotate around the origin, not the center
                 width: root.artistLen
-                height: 14
-                x: 19 // visual strip spans [5, 19]
+                height: Theme.artistStrip
+                x: Math.round((Theme.widgetWidth - 2 * Theme.widgetMargin + Theme.artistStrip) / 2)
                 y: root.titleLen + 3 // follows the title length
                 elide: Text.ElideRight
                 text: root.player ? root.player.trackArtist || "" : ""
                 color: root.playing ? Theme.bg : Theme.fgDim
                 font.family: Theme.fontFamily
-                font.pixelSize: 12
+                font.pixelSize: Theme.fontSizeTiny
                 Behavior on color { ColorAnimation { duration: 150 } }
             }
         }

@@ -8,8 +8,8 @@ import qs.services
 Rectangle {
     id: root
 
-    width: 30
-    height: 22
+    width: Theme.widgetWidth
+    height: Math.round(Theme.unit * 5.5)
     radius: 7
     color: area.containsMouse ? Theme.bgHover : "transparent"
     visible: KeyboardLayout.available
@@ -19,7 +19,7 @@ Rectangle {
         text: KeyboardLayout.layout
         color: Theme.fgDim
         font.family: Theme.fontFamily
-        font.pixelSize: 10
+        font.pixelSize: Theme.fontSizeSmall
         font.bold: true
     }
 

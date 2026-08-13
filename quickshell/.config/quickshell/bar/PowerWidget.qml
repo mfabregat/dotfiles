@@ -7,8 +7,8 @@ Rectangle {
 
     required property var powerMenu
 
-    width: 30
-    height: 30
+    width: Theme.widgetWidth
+    height: Math.round(Theme.unit * 7.5)
     radius: 7
     color: area.containsMouse ? Theme.bgHover : "transparent"
 
@@ -17,7 +17,7 @@ Rectangle {
         text: ""
         color: Theme.fg
         font.family: Theme.fontFamily
-        font.pixelSize: 14
+        font.pixelSize: Theme.fontSizeLarge
     }
 
     MouseArea {

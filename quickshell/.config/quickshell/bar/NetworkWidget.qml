@@ -12,8 +12,8 @@ Rectangle {
     readonly property var wifi: findWifi(Networking.devices.values)
     readonly property var activeNet: findActive(Networking.devices.values, wifi ? wifi.networks.values : [])
 
-    width: 30
-    height: 36
+    width: Theme.widgetWidth
+    height: Theme.unit * 9
     radius: 7
     color: area.containsMouse ? Theme.bgHover : "transparent"
 
@@ -46,7 +46,7 @@ Rectangle {
             text: root.wifi ? "" : "󰈀"
             color: root.activeNet ? Theme.fg : Theme.accent
             font.family: Theme.fontFamily
-            font.pixelSize: 14
+            font.pixelSize: Theme.fontSizeLarge
         }
 
         Text {
@@ -57,7 +57,7 @@ Rectangle {
             text: root.activeNet ? root.activeNet.name : ""
             color: Theme.fgDim
             font.family: Theme.fontFamily
-            font.pixelSize: 8
+            font.pixelSize: Theme.fontSizeTiny
         }
     }
 

@@ -48,7 +48,7 @@ Scope {
             // ── Bar content ─────────────────────────────────────────────
             ColumnLayout {
                 anchors.fill: parent
-                anchors.margins: 4
+                anchors.margins: Theme.innerMargin
                 spacing: Theme.spacing
 
                     // Top: desks + now playing

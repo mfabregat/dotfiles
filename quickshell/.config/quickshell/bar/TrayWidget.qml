@@ -13,10 +13,10 @@ Item {
 
     readonly property int shown: Math.min(SystemTray.items.values.length, 4)
 
-    width: 30
+    width: Theme.widgetWidth
     // Layouts honor Layout.preferredHeight (bound `height` gets overridden)
-    Layout.preferredHeight: shown * 30
-    height: shown * 30
+    Layout.preferredHeight: shown * (Theme.pillWidth + 2)
+    height: shown * (Theme.pillWidth + 2)
     clip: true // overflow (5+ items) is hidden, never overlaps the clock
 
     Column {
@@ -30,18 +30,18 @@ Item {
                 required property var modelData
                 readonly property bool canActivate: !modelData.onlyMenu
 
-                width: 28
-                height: 28
+                width: Theme.pillWidth
+                height: Theme.pillWidth
                 radius: 6
                 color: itemArea.containsMouse ? Theme.bgHover : "transparent"
 
                 Image {
                     id: icon
                     anchors.centerIn: parent
-                    width: 16
-                    height: 16
+                    width: Theme.iconSize
+                    height: Theme.iconSize
                     source: modelData.icon
-                    sourceSize { width: 16; height: 16 }
+                    sourceSize { width: Theme.iconSize; height: Theme.iconSize }
                     visible: status === Image.Ready
                 }
 
@@ -51,7 +51,7 @@ Item {
                     text: modelData.title ? modelData.title.charAt(0).toUpperCase() : "?"
                     color: Theme.fgDim
                     font.family: Theme.fontFamily
-                    font.pixelSize: 10
+                    font.pixelSize: Theme.fontSizeSmall
                 }
 
                 MouseArea {

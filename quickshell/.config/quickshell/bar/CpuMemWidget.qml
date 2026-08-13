@@ -13,7 +13,7 @@ ColumnLayout {
     readonly property real mem: CpuMemTemp.mem
     readonly property real temp: CpuMemTemp.temp
 
-    width: 30
+    width: Theme.widgetWidth
     spacing: 2
     visible: CpuMemTemp.available
 
@@ -52,7 +52,7 @@ ColumnLayout {
         property real value: 0
         property color color: Theme.fgDim
 
-        width: 30
+        width: Theme.widgetWidth
         spacing: 0
 
         Text {
@@ -60,7 +60,7 @@ ColumnLayout {
             text: item.glyph
             color: item.color
             font.family: Theme.fontFamily
-            font.pixelSize: 13
+            font.pixelSize: Theme.fontSizeLarge
         }
 
         Text {
@@ -68,7 +68,7 @@ ColumnLayout {
             text: Math.round(item.value) + "%"
             color: Theme.fgDim
             font.family: Theme.fontFamily
-            font.pixelSize: 8
+            font.pixelSize: Theme.fontSizeTiny
         }
     }
 }

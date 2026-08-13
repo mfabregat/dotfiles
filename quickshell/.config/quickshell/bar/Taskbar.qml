@@ -33,8 +33,8 @@ Column {
                 return null;
             }
 
-            width: 28
-            height: 28
+            width: Theme.pillWidth
+            height: Theme.pillWidth
             radius: 6
             color: area.containsMouse ? Theme.bgHover
                  : modelData.activated ? Theme.dark1
@@ -43,10 +43,10 @@ Column {
             Image {
                 id: icon
                 anchors.centerIn: parent
-                width: 16
-                height: 16
+                width: Theme.iconSize
+                height: Theme.iconSize
                 source: "image://icon/" + iconName
-                sourceSize { width: 16; height: 16 }
+                sourceSize { width: Theme.iconSize; height: Theme.iconSize }
                 visible: status === Image.Ready
             }
 
@@ -56,7 +56,7 @@ Column {
                 text: modelData.appId ? modelData.appId.charAt(0).toUpperCase() : "?"
                 color: modelData.activated ? Theme.fg : Theme.fgDim
                 font.family: Theme.fontFamily
-                font.pixelSize: 11
+                font.pixelSize: Theme.fontSizeSmall
                 font.bold: true
             }
 

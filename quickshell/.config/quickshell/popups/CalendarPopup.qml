@@ -7,7 +7,7 @@ import qs
 AnchoredPopup {
     id: root
 
-    readonly property int cell: 30
+    readonly property int cell: Theme.calendarCell
     property date today: new Date()
     property int viewYear: today.getFullYear()
     property int viewMonth: today.getMonth()
@@ -38,7 +38,7 @@ AnchoredPopup {
                 text: Qt.formatDate(new Date(root.viewYear, root.viewMonth, 1), "MMMM yyyy")
                 color: Theme.fg
                 font.family: Theme.fontFamily
-                font.pixelSize: 12
+                font.pixelSize: Theme.fontSize
                 font.bold: true
             }
 
@@ -65,7 +65,7 @@ AnchoredPopup {
                     text: modelData
                     color: Theme.fgDim
                     font.family: Theme.fontFamily
-                    font.pixelSize: 9
+                    font.pixelSize: Theme.fontSizeTiny
                 }
             }
         }
@@ -97,7 +97,7 @@ AnchoredPopup {
                         text: day
                         color: isToday ? Theme.dark0 : Theme.fg
                         font.family: Theme.fontFamily
-                        font.pixelSize: 11
+                        font.pixelSize: Theme.fontSizeSmall
                         font.bold: isToday
                     }
                 }
@@ -111,8 +111,8 @@ AnchoredPopup {
         property string text: ""
         signal clicked
 
-        width: 22
-        height: 20
+        width: Math.round(Theme.unit * 5.5)
+        height: Theme.unit * 5
         radius: 5
         color: btnArea.containsMouse ? Theme.bgHover : "transparent"
 
@@ -121,7 +121,7 @@ AnchoredPopup {
             text: btn.text
             color: Theme.fg
             font.family: Theme.fontFamily
-            font.pixelSize: 10
+            font.pixelSize: Theme.fontSizeSmall
         }
 
         MouseArea {

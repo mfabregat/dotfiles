@@ -16,8 +16,8 @@ Rectangle {
     readonly property real volume: node && node.audio ? node.audio.volume : 0
     readonly property bool muted: node && node.audio ? node.audio.muted : false
 
-    width: 30
-    height: 40
+    width: Theme.widgetWidth
+    height: Theme.unit * 10
     radius: 7
     color: area.containsMouse ? Theme.bgHover : "transparent"
 
@@ -36,7 +36,7 @@ Rectangle {
             text: !root.hasNode ? "" : root.muted ? "" : ""
             color: root.muted ? Theme.urgent : (root.volume > 0.5 ? Theme.fg : Theme.fgDim)
             font.family: Theme.fontFamily
-            font.pixelSize: 14
+            font.pixelSize: Theme.fontSizeLarge
         }
 
         Text {
@@ -44,7 +44,7 @@ Rectangle {
             text: root.hasNode ? Math.round(root.volume * 100) + "%" : ""
             color: Theme.fgDim
             font.family: Theme.fontFamily
-            font.pixelSize: 9
+            font.pixelSize: Theme.fontSizeTiny
         }
     }
 

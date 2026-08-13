@@ -67,7 +67,7 @@ AnchoredPopup {
         signal triggered
 
         width: parent.width
-        height: 34
+        height: Math.round(Theme.unit * 8.5)
         radius: 6
         color: rowArea.containsMouse ? Theme.bgHover : "transparent"
 
@@ -80,7 +80,7 @@ AnchoredPopup {
             text: row.icon
             color: armed ? Theme.brightYellow : Theme.fg
             font.family: Theme.fontFamily
-            font.pixelSize: 13
+            font.pixelSize: Theme.fontSizeLarge
         }
 
         Text {
@@ -88,7 +88,7 @@ AnchoredPopup {
             text: armed ? row.armText : row.label
             color: armed ? Theme.brightYellow : Theme.fg
             font.family: Theme.fontFamily
-            font.pixelSize: 12
+            font.pixelSize: Theme.fontSize
         }
 
         MouseArea {

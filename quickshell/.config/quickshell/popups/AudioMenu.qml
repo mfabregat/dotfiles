@@ -19,7 +19,7 @@ AnchoredPopup {
             text: "Output devices"
             color: Theme.fgDim
             font.family: Theme.fontFamily
-            font.pixelSize: 10
+            font.pixelSize: Theme.fontSizeSmall
             font.bold: true
         }
 
@@ -32,7 +32,7 @@ AnchoredPopup {
                 readonly property bool isDefault: modelData === Pipewire.defaultAudioSink
 
                 width: parent.width
-                height: visibleRow ? 32 : 0
+                height: visibleRow ? Theme.popupRowHeight : 0
                 visible: visibleRow
                 radius: 6
                 color: rowArea.containsMouse ? Theme.bgHover
@@ -47,7 +47,7 @@ AnchoredPopup {
                         text: isDefault ? "" : ""
                         color: isDefault ? Theme.accent : Theme.fgDim
                         font.family: Theme.fontFamily
-                        font.pixelSize: 12
+                        font.pixelSize: Theme.fontSize
                     }
 
                     Text {
@@ -56,14 +56,14 @@ AnchoredPopup {
                         text: modelData.description || modelData.name || ("Node " + modelData.id)
                         color: isDefault ? Theme.fg : Theme.fgDim
                         font.family: Theme.fontFamily
-                        font.pixelSize: 11
+                        font.pixelSize: Theme.fontSize
                     }
 
                     Text {
                         text: modelData.audio ? Math.round(modelData.audio.volume * 100) + "%" : ""
                         color: Theme.fgDim
                         font.family: Theme.fontFamily
-                        font.pixelSize: 10
+                        font.pixelSize: Theme.fontSizeSmall
                     }
                 }
 

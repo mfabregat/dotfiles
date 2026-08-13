@@ -9,8 +9,8 @@ Rectangle {
 
     required property var calendar
 
-    width: 30
-    height: 40
+    width: Theme.widgetWidth
+    height: Theme.unit * 10
     radius: 7
     color: area.containsMouse ? Theme.bgHover : "transparent"
 
@@ -29,7 +29,7 @@ Rectangle {
             text: Qt.formatDateTime(clock.date, "HH")
             color: Theme.fg
             font.family: Theme.fontFamily
-            font.pixelSize: 14
+            font.pixelSize: Theme.fontSizeLarge
             font.bold: true
         }
 
@@ -38,7 +38,7 @@ Rectangle {
             text: Qt.formatDateTime(clock.date, "mm")
             color: Theme.fgDim
             font.family: Theme.fontFamily
-            font.pixelSize: 12
+            font.pixelSize: Theme.fontSize
             font.bold: true
         }
     }
