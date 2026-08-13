@@ -13,9 +13,8 @@ set $right l
 set $term ghostty
 
 # Your preferred application launcher
-# Modes are enforced on the command line so the order (apps, ssh, run)
-# always wins over any config-file oddities.
-set $menu --no-startup-id rofi -show drun -modes "drun,ssh,run"
+# Toggles the quickshell launcher (drun) over IPC; Esc or click-outside closes.
+set $menu quickshell ipc call launcher toggle
 
 # set $browser brave-browser
 set $browser firefox

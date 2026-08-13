@@ -198,3 +198,44 @@ Remaining: exit-confirm uses the power menu (swaynag removed). Note: the
 audio menu now lists hardware sinks from Pipewire (old audio_menu.sh is
 gone). gammastep-indicator is dead (no tray app); night-light toggle comes
 in phase 7.
+
+## Phase 3 log (2026-08-13, done)
+
+Launcher live: drun with fuzzy search, `$mod+d` toggles it, Enter launches,
+Esc / click-outside closes. Rofi retired.
+
+- `services/LauncherState.qml` (new singleton): `open` state + `IpcHandler
+  target "launcher"` with typed functions `toggle()` / `open()` / `close()`
+  (the 0.3.0 IPC way — functions with explicit signatures, not
+  onSignalTriggered). sway: `set $menu quickshell ipc call launcher toggle`.
+- `popups/Launcher.qml` (new): one fullscreen transparent PanelWindow per
+  screen (Variants delegate, shell.qml). Only the focused monitor's
+  instance is visible (`I3.monitorFor(screen).focused`, guarded by
+  `I3.monitors.values.length`). Centered gruvbox card: search input, 8-row
+  results window, empty state, footer hint.
+- **Keyboard grab**: PanelWindow has no `grabFocus`; the wlr-layer-shell
+  attached property does it — `WlrLayershell.keyboardFocus:
+  WlrKeyboardFocus.Exclusive` (import `Quickshell.Wayland._WlrLayerShell`).
+  Grab is active while the surface is mapped; focus returns to the session
+  on close (verified via `swaymsg -t get_tree` focused-node cycling).
+- **New landmine 9 — delegates get no `index`** (neither ListView nor
+  Repeater, quickshell 0.3.0 + Qt 6.11): `ReferenceError: index is not
+  defined`. Every existing widget only ever uses `modelData` — selection is
+  tracked by object identity (`entry === root.selectedEntry`). The results
+  list is a Repeater + Column over a `visibleResults` slice (scrollOffset
+  window), scrolling via a 8-row window with Up/Down.
+- **Fuzzy scorer**: per-token subsequence over name/generic/keywords/
+  categories/exec; scores consecutive runs and word starts, bonus for
+  name-prefix; `noDisplay` entries excluded; sort by score then name.
+  Unit-tested in node before embedding (`/tmp/scorer_test.js`, 10/10).
+- `TextInput` here has no `placeholderText`/`placeholderTextColor` (Controls
+  only in this Qt) — dropped, the search glyph carries the affordance.
+- Focus arming: `focus: true` on the input + `Qt.callLater(forceActiveFocus)`
+  on open (deferred past surface mapping).
+- **Verified live**: clean load (0 errors); `ipc show` lists the handler;
+  open/toggle/close all exit 0; seat focus cycles toplevel ↔ launcher
+  (launcher has the keyboard while open); sway reload validates the new
+  `$menu`.
+- Note: fixed two pre-existing WIP errors that blocked the whole shell from
+  loading — duplicate `onPressed` handlers on MprisWidget's and Taskbar's
+  MouseAreas (merged; MprisWidget kept its left-click togglePlaying).

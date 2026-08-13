@@ -6,7 +6,15 @@
 import Quickshell
 import QtQuick
 import qs.bar
+import qs.popups
 
 ShellRoot {
     RightBar {}
+
+    // Launcher: one fullscreen window per screen; only the focused
+    // monitor's instance is visible (see popups/Launcher.qml).
+    Variants {
+        model: Quickshell.screens
+        Launcher {}
+    }
 }
