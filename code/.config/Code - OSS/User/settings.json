@@ -164,7 +164,6 @@
     "cmake.enableAutomaticKitScan": false,
     "terminal.integrated.initialHint": false,
     "editor.minimap.enabled": false,
-    "workbench.colorTheme": "Gruvbox Dark Soft",
     "scm.repositories.visible": 0,
     "git.repositoryScanMaxDepth": 3,
     "explorer.confirmPasteNative": false,
@@ -216,4 +215,5 @@
     "problems.decorations.enabled": false,
     "editor.fontFamily": "JetBrainsMono Nerd Font Mono",
     "terminal.integrated.fontLigatures.enabled": true,
+    "workbench.colorTheme": "Gruvbox Dark Medium",
 }

@@ -103,8 +103,9 @@ ln -s ~/.themes/Gruvbox-BL-MB-Dark ~/.local/share/themes/Gruvbox-BL-MB-Dark # is
 # Sway
 sudo apt install sway waybar swaylock playerctl grimshot
 # May have to edit the gdm3 wayland_sessions to add nvidia compatibility
+# Dynamic output config: https://github.com/hw0lff/shikane (Arch: pacman -S shikane)
 cd ~/dotfiles
-stow sway
+stow sway shikane
 
 
 ## Fonts: Noto for system/reading and JetBrainsMono for terminal/editor
