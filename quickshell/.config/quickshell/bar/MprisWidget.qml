@@ -26,13 +26,11 @@ Rectangle {
     required property real freeSpace
 
     // Length limits: whole text up to the maximums; if it does not fit the
-    // free space, shrink the title first (down to minTitleLen), then the
-    // artist. All bindings are acyclic: freeSpace comes from the layout's
-    // fixed siblings, never from this widget's own size.
+    // free space, shrink the title first, then the artist. All bindings
+    // are acyclic: freeSpace comes from the layout's fixed siblings, never
+    // from this widget's own size.
     readonly property int maxTitleLen: 180
-    readonly property int minTitleLen: 60
     readonly property int maxArtistLen: 180
-    readonly property int minArtistLen: 60
     readonly property real titleNatural: Math.min(titleText.implicitWidth, maxTitleLen)
     readonly property real artistNatural: Math.min(artistText.implicitWidth, maxArtistLen)
     readonly property real availableLen: Math.max(0, root.freeSpace
