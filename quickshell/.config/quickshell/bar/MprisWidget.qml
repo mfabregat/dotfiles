@@ -98,7 +98,7 @@ Rectangle {
                 rotation: 90
                 transformOrigin: Item.TopLeft // rotate around the origin, not the center
                 width: root.titleLen
-                x: Math.round((parent.width + height) / 2)
+                x: Math.ceil((parent.width + height) / 2)
                 y: 0
                 elide: Text.ElideRight
                 text: root.player ? root.player.trackTitle || "" : ""
@@ -113,25 +113,32 @@ Rectangle {
                 rotation: 90
                 transformOrigin: Item.TopLeft // rotate around the origin, not the center
                 width: root.artistLen
-                x: Math.round((parent.width + height) / 2)
+                x: Math.ceil((parent.width + height) / 2)
                 y: root.titleLen + 2 + dashText.height + 2 // follows title + dash
                 elide: Text.ElideRight
                 text: root.player ? root.player.trackArtist || "" : ""
-                color: root.playing ? Theme.bg : Theme.fgDim
+                color: root.playing ? Theme.bg : Theme.fg
                 font.family: Theme.fontFamily
                 font.pixelSize: Theme.fontSize // same size as the title
                 Behavior on color { ColorAnimation { duration: 150 } }
+                font.bold: true
             }
 
             // Small dash separator between title and artist
+            // Small dash separator between title and artist (rotated with
+            // the strips). Glyph-sized box (a "-" is roughly square) and
+            // center-origin rotation: placing the box center in the gap
+            // middle centers the visible dash — y = titleLen + 2.
             Text {
                 id: dashText
+                rotation: 90
                 text: "-"
-                color: root.playing ? Theme.bg : Theme.fgDim
+                height: implicitWidth
+                color: root.playing ? Theme.bg : Theme.fg
                 font.family: Theme.fontFamily
                 font.pixelSize: Theme.fontSize
-                x: Math.round((parent.width - width) / 2)
-                y: root.titleLen + 2
+                x: Math.ceil((parent.width - width) / 2)
+                y: Math.ceil(root.titleLen + 2)
                 Behavior on color { ColorAnimation { duration: 150 } }
             }
         }
@@ -155,6 +162,7 @@ Rectangle {
                 root.focusPlayerWindow();
         }
     }
+
 
     // Replaces the old player_focus.sh: raise the window via MPRIS and
     // focus it through sway (works even when raise() is unsupported).
