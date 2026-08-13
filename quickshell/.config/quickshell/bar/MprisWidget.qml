@@ -70,6 +70,7 @@ Rectangle {
             Text {
                 id: titleText
                 rotation: 90
+                transformOrigin: Item.TopLeft // rotate around the origin, not the center
                 width: root.titleLen
                 height: 17
                 x: 21 // visual strip spans [4, 21] (centered in the 24px content)
@@ -85,6 +86,7 @@ Rectangle {
             Text {
                 id: artistText
                 rotation: 90
+                transformOrigin: Item.TopLeft // rotate around the origin, not the center
                 width: root.artistLen
                 height: 14
                 x: 19 // visual strip spans [5, 19]
