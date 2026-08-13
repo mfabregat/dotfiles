@@ -35,7 +35,7 @@ Rectangle {
     readonly property real titleNatural: Math.min(titleText.implicitWidth, maxTitleLen)
     readonly property real artistNatural: Math.min(artistText.implicitWidth, maxArtistLen)
     readonly property real availableLen: Math.max(0, root.freeSpace
-        - 4 - iconText.implicitHeight - 3 - 2)
+        - 4 - iconText.implicitHeight - 3 - 2 - dashText.height - 2)
 
     readonly property real titleLen: root.titleNatural + root.artistNatural <= root.availableLen
         ? root.titleNatural
@@ -49,7 +49,7 @@ Rectangle {
     width: Theme.widgetWidth
     // Sized by the layout to exactly this (no fill, no loop)
     implicitHeight: 4 + iconText.implicitHeight + 3
-        + root.titleLen + 2 + root.artistLen
+        + root.titleLen + 2 + dashText.height + 2 + root.artistLen
     visible: hasPlayer
     radius: 7
     color: playing ? Theme.accent
@@ -114,12 +114,24 @@ Rectangle {
                 transformOrigin: Item.TopLeft // rotate around the origin, not the center
                 width: root.artistLen
                 x: Math.round((parent.width + height) / 2)
-                y: root.titleLen + 2 // follows the title length
+                y: root.titleLen + 2 + dashText.height + 2 // follows title + dash
                 elide: Text.ElideRight
                 text: root.player ? root.player.trackArtist || "" : ""
                 color: root.playing ? Theme.bg : Theme.fgDim
                 font.family: Theme.fontFamily
-                font.pixelSize: Theme.fontSizeSmall
+                font.pixelSize: Theme.fontSize // same size as the title
+                Behavior on color { ColorAnimation { duration: 150 } }
+            }
+
+            // Small dash separator between title and artist
+            Text {
+                id: dashText
+                text: "-"
+                color: root.playing ? Theme.bg : Theme.fgDim
+                font.family: Theme.fontFamily
+                font.pixelSize: Theme.fontSize
+                x: Math.round((parent.width - width) / 2)
+                y: root.titleLen + 2
                 Behavior on color { ColorAnimation { duration: 150 } }
             }
         }
