@@ -27,7 +27,7 @@ Rectangle {
             text: ""
             color: percent < 40 ? Theme.fgDim : Theme.fg
             font.family: Theme.fontFamily
-            font.pixelSize: Theme.fontSizeLarge
+            font.pixelSize: Theme.fontSizeGlyphs
         }
 
         Text {
@@ -35,7 +35,7 @@ Rectangle {
             text: percent >= 0 ? percent + "%" : ""
             color: Theme.fgDim
             font.family: Theme.fontFamily
-            font.pixelSize: Theme.fontSizeTiny
+            font.pixelSize: Theme.fontSizeSmall
         }
     }
 

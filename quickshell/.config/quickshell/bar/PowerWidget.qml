@@ -17,7 +17,7 @@ Rectangle {
         text: ""
         color: Theme.fg
         font.family: Theme.fontFamily
-        font.pixelSize: Theme.fontSizeLarge
+        font.pixelSize: Theme.fontSizeGlyphs
     }
 
     MouseArea {

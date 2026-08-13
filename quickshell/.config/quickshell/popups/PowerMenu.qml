@@ -80,7 +80,7 @@ AnchoredPopup {
             text: row.icon
             color: armed ? Theme.brightYellow : Theme.fg
             font.family: Theme.fontFamily
-            font.pixelSize: Theme.fontSizeLarge
+            font.pixelSize: Theme.fontSizeGlyphs
         }
 
         Text {

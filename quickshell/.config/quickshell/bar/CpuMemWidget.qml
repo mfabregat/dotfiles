@@ -52,7 +52,7 @@ Item {
         horizontalAlignment: Text.AlignHCenter
         text: glyph
         font.family: Theme.fontFamily
-        font.pixelSize: Theme.fontSizeLarge
+        font.pixelSize: Theme.fontSizeGlyphs
     }
 
     MouseArea {

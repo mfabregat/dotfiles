@@ -42,7 +42,7 @@ Rectangle {
                  : percent <= 30 && discharging ? Theme.warn
                  : Theme.fg
             font.family: Theme.fontFamily
-            font.pixelSize: Theme.fontSizeLarge
+            font.pixelSize: Theme.fontSizeGlyphs
         }
 
         Text {
@@ -50,7 +50,7 @@ Rectangle {
             text: percent + "%"
             color: Theme.fgDim
             font.family: Theme.fontFamily
-            font.pixelSize: Theme.fontSizeTiny
+            font.pixelSize: Theme.fontSizeSmall
         }
     }
 

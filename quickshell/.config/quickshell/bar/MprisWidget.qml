@@ -79,7 +79,7 @@ Rectangle {
             text: root.player ? (root.player.dbusName.toLowerCase().includes("spotify") ? "" : "") : ""
             color: root.playing ? Theme.bg : Theme.fgDim
             font.family: Theme.fontFamily
-            font.pixelSize: Theme.fontSizeLarge
+            font.pixelSize: Theme.fontSizeGlyphs
             Behavior on color { ColorAnimation { duration: 150 } }
         }
 

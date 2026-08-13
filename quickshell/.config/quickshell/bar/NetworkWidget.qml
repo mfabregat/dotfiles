@@ -46,7 +46,7 @@ Rectangle {
             text: root.wifi ? "" : "󰈀"
             color: root.activeNet ? Theme.fg : Theme.accent
             font.family: Theme.fontFamily
-            font.pixelSize: Theme.fontSizeLarge
+            font.pixelSize: Theme.fontSizeGlyphs
         }
 
         Text {
@@ -58,7 +58,7 @@ Rectangle {
             visible: root.activeNet !== null // no blank line when disconnected
             color: Theme.fgDim
             font.family: Theme.fontFamily
-            font.pixelSize: Theme.fontSizeTiny
+            font.pixelSize: Theme.fontSizeSmall
         }
     }
 

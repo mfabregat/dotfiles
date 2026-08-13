@@ -94,7 +94,7 @@ AnchoredPopup {
                 text: ""
                 color: root.tempColorFor(CpuMemTemp.temp)
                 font.family: Theme.fontFamily
-                font.pixelSize: Theme.fontSizeLarge
+                font.pixelSize: Theme.fontSizeGlyphs
             }
 
             Text {

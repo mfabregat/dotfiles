@@ -29,7 +29,7 @@ Rectangle {
             text: Qt.formatDateTime(clock.date, "HH")
             color: Theme.fg
             font.family: Theme.fontFamily
-            font.pixelSize: Theme.fontSizeLarge
+            font.pixelSize: Theme.fontSizeGlyphs
             font.bold: true
         }
 

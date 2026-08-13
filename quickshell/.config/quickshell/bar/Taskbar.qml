@@ -43,10 +43,10 @@ Column {
             Image {
                 id: icon
                 anchors.centerIn: parent
-                width: Theme.iconSize
-                height: Theme.iconSize
+                width: Theme.fontSizeGlyphs
+                height: Theme.fontSizeGlyphs
                 source: "image://icon/" + iconName
-                sourceSize { width: Theme.iconSize; height: Theme.iconSize }
+                sourceSize { width: Theme.fontSizeGlyphs; height: Theme.fontSizeGlyphs }
                 visible: status === Image.Ready
             }
 

@@ -66,12 +66,10 @@ Singleton {
     readonly property int pillWidth: 21
     readonly property int pillHeight: 18
 
-    // ── Typography & icons ────────────────────────────────────────────
-    readonly property int iconSize: 16    // taskbar/tray app icons
-    readonly property int fontSizeTiny: 6   // small labels (percentages, artist)
-    readonly property int fontSizeSmall: 8  // pill numbers, weekday headers
-    readonly property int fontSize: 9       // general text (track title, menus)
-    readonly property int fontSizeLarge: 11 // prominent text (glyphs, clock, power)
+    // ── Typography & icons (three sizes only) ─────────────────────────
+    readonly property int fontSizeSmall: 8   // small labels (percentages, artist)
+    readonly property int fontSize: 12        // general text (track title, menus)
+    readonly property int fontSizeGlyphs: 16 // icons and status glyphs
 
     // ── Mpris strips (rotated title/artist lines) ────────────────────
     readonly property int titleStrip: 13  // visual width of the title line

@@ -65,7 +65,7 @@ AnchoredPopup {
                     text: modelData
                     color: Theme.fgDim
                     font.family: Theme.fontFamily
-                    font.pixelSize: Theme.fontSizeTiny
+                    font.pixelSize: Theme.fontSizeSmall
                 }
             }
         }

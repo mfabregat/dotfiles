@@ -36,7 +36,7 @@ Rectangle {
             text: !root.hasNode ? "" : root.muted ? "" : ""
             color: root.muted ? Theme.urgent : (root.volume > 0.5 ? Theme.fg : Theme.fgDim)
             font.family: Theme.fontFamily
-            font.pixelSize: Theme.fontSizeLarge
+            font.pixelSize: Theme.fontSizeGlyphs
         }
 
         // Vertical volume bar (fill rises with the level)
