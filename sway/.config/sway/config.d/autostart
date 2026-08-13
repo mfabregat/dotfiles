@@ -1,5 +1,5 @@
 
-exec_always sh -c 'pkill -x waybar 2>/dev/null; /home/marc/.config/waybar/audio_menu.sh; exec waybar'
+exec_always sh -c 'pkill -x waybar 2>/dev/null; pkill -x quickshell 2>/dev/null; sleep 0.2; exec quickshell'
 exec_always autotiling
 exec_always sh -c 'pkill -x gammastep 2>/dev/null; exec gammastep-indicator'
 

@@ -138,3 +138,26 @@ Key mechanics:
   (no snixd needed).
 - Clipboard manager: watch via `wl-paste --watch` (wl-clipboard) into a
   ring buffer service.
+
+## Phase 1 log (2026-08-13, done)
+
+- Installed: none needed (qt6-svg already present; qt6-5compat/
+  qt6-imageformats optional — user runs `sudo pacman -S qt6-5compat
+  qt6-imageformats` if wanted; MultiEffect avoids the 5compat dependency).
+- Created stow package `quickshell/` (shell.qml + Theme.qml + bar/RightBar.qml).
+- Autostart: waybar line replaced with `exec_always sh -c 'pkill -x waybar
+  2>/dev/null; pkill -x quickshell 2>/dev/null; sleep 0.2; exec quickshell'`.
+- **Verified live**: sway 1.12 supports ext-session-lock ✓; quickshell bar
+  renders flush at the right edge of DP-1 (focused monitor); sway reload
+  restarts quickshell cleanly as a sway child; waybar is gone.
+- **Quirk 1 — exclusive zones**: while waybar was still running, the
+  quickshell bar rendered *left of* waybar (waybar owns the right-edge
+  exclusive zone). Not a bug; gone with waybar.
+- **Quirk 2 — reload flakiness**: structural changes to the scene root
+  across hot reloads sometimes fail to map windows (0.3.0 behavior);
+  property-level changes reload fine. Workflow: restart quickshell after
+  structural edits (`pkill -x quickshell`), hot-reload for styling.
+- **Pattern that works**: file-root PanelWindow or Variants delegates on
+  `Quickshell.screens` map on fresh launch. Bars/popups will all follow
+  the Variants-per-screen pattern.
+- QS_NO_RELOAD_POPUP=1 set via pragma (no toast on every reload).
