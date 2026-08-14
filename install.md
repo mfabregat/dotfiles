@@ -1,18 +1,36 @@
 ## Installed
-git
-stow
-ghostty
-firefox
-yazi ffmpeg 7zip jq poppler fd ripgrep fzf zoxide resvg imagemagick
-code
-ttf-jetbrains-mono-nerd ttf-noto-nerd
-gnome-keyring
-base-devel
-flatpak
+7zip
 autotiling
-shikane
-wl-clipboard gammastep grim
-
+code
+docker
+firefox
+flatpak
+gammastep
+ghostty
+git
+gnome-keyring
+grim
+helium
+pi-coding-agent
+pipewire
+quickshell
+stow
+sway
+swayidle
+ttf-jetbrains-mono-nerd
+ttf-noto-nerd
+wget
+wireplumber
+wl-clipboard
+yazi
+playerctl
+polkit
+networkmanager
+spotify
+brightnessctl
+jq
+pipewire-pulse
+upower
 
 
 ## Quickshell shell (right bar · launcher · notifications · OSD · polkit · lock · extras)
@@ -34,11 +52,13 @@ sudo pacman -S quickshell pipewire brightnessctl polkit networkmanager upower sw
 
   (the plan was written against 0.3.0; revisit the pin only after
   reading PLAN-quickshell.md for the verified API facts).
-- Replaces the retired waybar (+ waybar_top) / swaylock / rofi /
-  swaynag-exit-confirm setup: the right bar, launcher, lock screen, and
-  power/exit flows all live in quickshell now. Their configs were
-  removed from this repo (phase 8); if the binaries are still installed
-  they are unused and can go with `sudo pacman -Rns waybar swaylock rofi`.
+- Replaces the retired waybar (+ waybar_top) / swaylock / rofi setup:
+  the right bar, launcher, lock screen, and power/exit flows live in
+  quickshell now. Their configs were removed from this repo (phase 8);
+  if the binaries are still installed they are unused and can go with
+  `sudo pacman -Rns waybar swaylock rofi`. (`swaynag` is still used for
+  the sway exit confirm in `config.d/navigation` — it ships with the
+  `sway` package, no extra install.)
 - `pipewire` provides wpctl (media/brightness keybindings); `brightnessctl`
   is only needed for brightness *writes* (reads are native sysfs).
 - `networkmanager` (network state), `upower` (battery), `polkit` (auth

@@ -1,8 +1,9 @@
 include /etc/sway/config.d/*
 
-# Shared defaults. This config is machine-agnostic: output geometry (mode,
-# position, scale) is owned by shikane (~/.config/shikane/config.toml),
-# which matches a profile per machine/arrangement at runtime. The desk
-# scripts derive their output mapping from monitor positions (see
-# scripts/libdesk.sh), so no per-machine file is needed here.
+# Shared defaults. This config is machine-agnostic: output geometry
+# (mode, position, scale) is declared in config.d/output — name blocks
+# first, identifier blocks last (identifiers follow the physical
+# monitor, so the same block works on any machine). The desk script
+# (scripts/desk) derives its output mapping from monitor positions at
+# runtime, so no per-machine file is needed here.
 include config.d/*

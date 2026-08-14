@@ -1,0 +1,132 @@
+#!/bin/sh
+# desk — multi-monitor virtual desktop control for sway.
+#
+# Sway has no workspace groups (a "desk" = one workspace per output,
+# switched atomically), so this script implements the scheme using IPC:
+#   desk go <n>    — switch the whole desk: every connected output shows
+#                    workspace <n><letter>; focus ends on your output.
+#   desk move <n>  — move the focused container to <n><letter> on the SAME
+#                    output, then switch the whole desk there.
+#   desk start     — bring up desk 1 at session start (retries briefly:
+#                    outputs may still be settling).
+#
+# Desk letters are POSITIONAL: connected outputs are sorted by their
+# position in the global coordinate space (left→right, top→bottom) and
+# mapped to a, b, c, ... Output geometry is declared in
+# config.d/output (name blocks first, identifier blocks last), so the
+# letter order is deterministic for a given arrangement (dock/undock
+# stable). There is no per-machine config: the mapping is derived at
+# runtime. $desks is fixed at 9 (bindings go up to $mod+9).
+#
+# Cost per action: 1 get_outputs query + 1 chained swaymsg command
+# (the focused output is read from the same query).
+
+OUTPUT_LETTERS="a b c d e f g h i"
+desks=9
+
+die() { printf 'desk: %s\n' "$*" >&2; exit 1; }
+
+# load_desk_map — sets: letters (active letters), nouts, out_<letter>,
+# focused_out (output containing the focused workspace). One IPC call.
+load_desk_map() {
+	outputs=$(swaymsg -t get_outputs -r) || die "swaymsg failed"
+	letters=""
+	nouts=0
+	focused_out=""
+	for out in $(printf '%s' "$outputs" | jq -r '[.[] | select(.active) | {name, x: .rect.x, y: .rect.y}] | sort_by(.x, .y) | .[].name'); do
+		letter=$(printf '%s' "$OUTPUT_LETTERS" | cut -d' ' -f$((nouts + 1)))
+		[ -n "$letter" ] || break # more outputs than letters
+		eval "out_$letter=\"$out\""
+		letters="$letters $letter" # space-separated, for word splitting
+		nouts=$((nouts + 1))
+	done
+	letters=${letters# } # strip leading space
+	[ "$nouts" -ge 1 ] || die "no outputs connected"
+	focused_out=$(printf '%s' "$outputs" | jq -r '.[] | select(.focused) | .name')
+}
+
+# desk_switch_chain <desk> <last-letter> — print a sway command chain that
+# brings up <desk> on every connected output, ending focus on <last>.
+# Each workspace is pinned for future creation (workspace X output Y) AND
+# actively moved to its output (move workspace to output Y), so misplaced
+# workspaces self-heal whenever a desk is opened.
+desk_switch_chain() {
+	desk=$1
+	last=$2
+	chain=""
+	for letter in $letters; do
+		[ "$letter" = "$last" ] && continue
+		eval "out=\$out_$letter"
+		chain="$chain workspace ${desk}${letter} output $out, focus output $out, workspace --no-auto-back-and-forth ${desk}${letter}, move workspace to output $out,"
+	done
+	eval "out=\$out_$last"
+	chain="$chain workspace ${desk}${last} output $out, focus output $out, workspace --no-auto-back-and-forth ${desk}${last}, move workspace to output $out"
+	printf '%s' "$chain"
+}
+
+# focused_letter — sets letter for focused_out (no extra IPC).
+focused_letter() {
+	[ -n "$focused_out" ] || die "no focused output found"
+	letter=""
+	for l in $letters; do
+		eval "o=\$out_$l"
+		[ "$o" = "$focused_out" ] && letter=$l
+	done
+	[ -n "$letter" ] || die "focused output \"$focused_out\" is not in the desk scheme"
+}
+
+go_desk() {
+	desk="${1:-}"
+	case "$desk" in
+		[1-9]) ;;
+		*) die "usage: desk go <desk 1-9>" ;;
+	esac
+	load_desk_map
+	[ "$desk" -le "$desks" ] || die "desk $desk out of range (max $desks)"
+
+	# End focus on the output the user is on (works even from non-scheme
+	# workspaces); fall back to the first letter if it is not in the scheme.
+	last=""
+	for l in $letters; do
+		eval "o=\$out_$l"
+		[ "$o" = "$focused_out" ] && last=$l
+	done
+	[ -n "$last" ] || last=$(printf '%s' "$letters" | cut -c1)
+
+	exec swaymsg --quiet "$(desk_switch_chain "$desk" "$last")"
+}
+
+move_desk() {
+	desk="${1:-}"
+	case "$desk" in
+		[1-9]) ;;
+		*) die "usage: desk move <desk 1-9>" ;;
+	esac
+	load_desk_map
+	[ "$desk" -le "$desks" ] || die "desk $desk out of range (max $desks)"
+
+	focused_letter
+	exec swaymsg --quiet "move container to workspace ${desk}${letter},$(desk_switch_chain "$desk" "$letter")"
+}
+
+start() {
+	# sway runs config `exec` lines only at startup (they are ignored on
+	# reload), but outputs may still be settling then — retry briefly.
+	# go_desk dies via `exit 1`, so run it in a subshell to keep retrying.
+	i=0
+	while [ "$i" -lt 10 ]; do
+		if ( go_desk 1 ) 2>/dev/null; then
+			exit 0
+		fi
+		sleep 0.5
+		i=$((i + 1))
+	done
+	exit 1
+}
+
+case "${1:-}" in
+	go)    go_desk "${2:-}" ;;
+	move)  move_desk "${2:-}" ;;
+	start) start ;;
+	*) die "usage: desk go <desk 1-9> | desk move <desk 1-9> | desk start" ;;
+esac

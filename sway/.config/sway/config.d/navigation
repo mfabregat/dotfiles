@@ -4,33 +4,33 @@ focus_follows_mouse no
 # Desks (dynamic scheme): workspaces are <desk><letter> (1a..9c...). A
 # keybind switches the whole desk: every connected output shows
 # workspace <desk><letter>. Desk letters are positional: connected
-# outputs sorted by position (left→right = a, b, c...), as pinned by
-# shikane. No per-machine config; see scripts/libdesk.sh.
+# outputs sorted by position (left→right = a, b, c...). No per-machine
+# config; see scripts/desk.
 #
 
-bindsym $mod+1 exec $scripts/goto_desk 1
-bindsym $mod+2 exec $scripts/goto_desk 2
-bindsym $mod+3 exec $scripts/goto_desk 3
-bindsym $mod+4 exec $scripts/goto_desk 4
-bindsym $mod+5 exec $scripts/goto_desk 5
-bindsym $mod+6 exec $scripts/goto_desk 6
-bindsym $mod+7 exec $scripts/goto_desk 7
-bindsym $mod+8 exec $scripts/goto_desk 8
-bindsym $mod+9 exec $scripts/goto_desk 9
+bindsym $mod+1 exec $scripts/desk go 1
+bindsym $mod+2 exec $scripts/desk go 2
+bindsym $mod+3 exec $scripts/desk go 3
+bindsym $mod+4 exec $scripts/desk go 4
+bindsym $mod+5 exec $scripts/desk go 5
+bindsym $mod+6 exec $scripts/desk go 6
+bindsym $mod+7 exec $scripts/desk go 7
+bindsym $mod+8 exec $scripts/desk go 8
+bindsym $mod+9 exec $scripts/desk go 9
 
 # Move container to a desk (same output), then switch the whole desk there
-bindsym $mod+Shift+1 exec $scripts/move_to_desk 1
-bindsym $mod+Shift+2 exec $scripts/move_to_desk 2
-bindsym $mod+Shift+3 exec $scripts/move_to_desk 3
-bindsym $mod+Shift+4 exec $scripts/move_to_desk 4
-bindsym $mod+Shift+5 exec $scripts/move_to_desk 5
-bindsym $mod+Shift+6 exec $scripts/move_to_desk 6
-bindsym $mod+Shift+7 exec $scripts/move_to_desk 7
-bindsym $mod+Shift+8 exec $scripts/move_to_desk 8
-bindsym $mod+Shift+9 exec $scripts/move_to_desk 9
+bindsym $mod+Shift+1 exec $scripts/desk move 1
+bindsym $mod+Shift+2 exec $scripts/desk move 2
+bindsym $mod+Shift+3 exec $scripts/desk move 3
+bindsym $mod+Shift+4 exec $scripts/desk move 4
+bindsym $mod+Shift+5 exec $scripts/desk move 5
+bindsym $mod+Shift+6 exec $scripts/desk move 6
+bindsym $mod+Shift+7 exec $scripts/desk move 7
+bindsym $mod+Shift+8 exec $scripts/desk move 8
+bindsym $mod+Shift+9 exec $scripts/desk move 9
 
 # Start on desk 1 (sway runs exec only at startup, not on reload)
-exec $scripts/startup_desk
+exec $scripts/desk start
 
 
 
