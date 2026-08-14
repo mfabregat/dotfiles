@@ -23,21 +23,25 @@ Singleton {
     property var prevStats: ({})
 
     // ── Polling ────────────────────────────────────────────────────────
-    // One `cat` per tick (sh + cat = 2 forks) instead of the old pipeline
-    // (sh + grep + awk + N×cat + sort + tail ≈ 10 forks/s with 6 sensors).
-    // The parser below splits the concatenated streams: /proc/stat lines,
-    // the MemTotal/MemAvailable lines, and raw hwmon millidegrees.
+    // ONE long-lived process streams a tick every second (`cat` of the
+    // same files as the old per-tick spawn, terminated by a marker);
+    // SplitParser delivers one chunk per tick. This is 0 spawns/s instead
+    // of the old Timer+re-exec (sh + cat = 2 forks/s forever) — the
+    // process sits in `sleep 1` between ticks. The parser below splits the
+    // concatenated streams: /proc/stat lines, the MemTotal/MemAvailable
+    // lines, and raw hwmon millidegrees.
     Process {
         id: pollProc
 
         command: [
             "sh", "-c",
-            "cat /proc/stat /proc/meminfo /sys/class/hwmon/hwmon*/temp*_input 2>/dev/null"
+            'while :; do cat /proc/stat /proc/meminfo /sys/class/hwmon/hwmon*/temp*_input 2>/dev/null; echo ===TICK===; sleep 1; done'
         ]
         running: true
 
-        stdout: StdioCollector {
-            onStreamFinished: root.parse(this.text)
+        stdout: SplitParser {
+            splitMarker: "===TICK==="
+            onRead: data => root.parse(data)
         }
     }
 
@@ -62,13 +66,6 @@ Singleton {
         stdout: StdioCollector {
             onStreamFinished: root.available = this.text.trim() === "ok"
         }
-    }
-
-    Timer {
-        interval: 1000
-        repeat: true
-        running: true
-        onTriggered: pollProc.running = true
     }
 
     Component.onCompleted: {

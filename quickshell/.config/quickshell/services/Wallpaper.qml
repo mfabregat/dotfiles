@@ -4,12 +4,11 @@
 // background matches the desktop exactly — no screencopy, no capture races
 // (plan: wallpaper blur).
 //
-// One-time probe (runs on first use — the LockSurface's Image binding
-// instantiates this singleton lazily at the first lock): QML cannot expand
-// $HOME and has no native file-exists check, so the probe is a single `sh`
-// builtin test — the same availability-probe pattern Brightness uses for
-// /sys/class/backlight (no optional binaries). No periodic spawns. If the
-// file is missing, `url` stays "" and the lock surface shows its solid
+// Probe is fully native (2026-08-14 review): $HOME via Quickshell.env, and
+// FileView's missing-file behavior as the existence check — a preload on a
+// nonexistent path never fires onLoaded and `.loaded` stays false (verified
+// with a throwaway config). The old single `sh` builtin probe is gone. If
+// the file is missing, `url` stays "" and the lock surface shows its solid
 // gruvbox base (the Image simply fails to load).
 pragma Singleton
 
@@ -24,20 +23,18 @@ Singleton {
     readonly property string url: root.path.length > 0 ? "file://" + root.path : ""
     property string path: ""
 
-    Process {
-        id: probe
+    readonly property string candidate: (Quickshell.env("HOME") || "")
+        + "/.config/sway/wallpaper.jpg"
 
-        command: ["sh", "-c", "[ -r \"$HOME/.config/sway/wallpaper.jpg\" ] && echo \"$HOME/.config/sway/wallpaper.jpg\""]
-        running: false
-
-        stdout: StdioCollector {
-            onStreamFinished: {
-                const p = this.text.trim();
-                if (p.length > 0) root.path = p;
-                console.log("[wallpaper] path: " + (root.path.length > 0 ? root.path : "(none)"));
-            }
+    // onLoaded only fires when the preload read succeeds (exists); the
+    // missing-file case never fires it (verified 2026-08-14).
+    FileView {
+        id: wall
+        path: root.candidate
+        preload: true
+        onLoaded: {
+            root.path = root.candidate;
+            console.log("[wallpaper] path: " + root.path);
         }
     }
-
-    Component.onCompleted: probe.running = true
 }

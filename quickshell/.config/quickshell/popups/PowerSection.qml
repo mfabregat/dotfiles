@@ -65,17 +65,7 @@ Column {
         onTriggered: root.armedAction = -1
     }
 
-    // ── Section header (small caps micro-label) ────────────────────────
-    component SectionLabel: Text {
-        text: ""
-        color: Theme.fgDim
-        font.family: Theme.fontFamily
-        font.pixelSize: Theme.fontSizeSmall
-        font.bold: true
-        font.capitalization: Font.AllUppercase
-        font.letterSpacing: Theme.letterSpacing
-    }
-
+    // ── Divider ─────────────────────────────────────────────────────────
     component Divider: Rectangle {
         width: parent.width
         height: 1

@@ -1,51 +1,33 @@
 // popups/ClipboardPopup.qml — clipboard history (search + copy).
 // One fullscreen window per screen; only the focused monitor's instance
-// is visible (launcher pattern). Toggled from sway: `quickshell ipc call
-// clipboard toggle` ($mod+Shift+v). Clicking a row copies it to the
+// is visible (OverlayWindow base). Toggled from sway: `quickshell ipc
+// call clipboard toggle` ($mod+Shift+v). Clicking a row copies it to the
 // clipboard and closes; ✕ removes a single entry; Esc / backdrop closes.
 //
 // Needs wl-clipboard (services/Clipboard.qml probes for it) — without it
 // the history stays empty and the popup shows a hint instead.
 import Quickshell
-import Quickshell.I3
-import Quickshell.Wayland._WlrLayerShell
 import QtQuick
 import qs
 import qs.services
 
-PanelWindow {
+OverlayWindow {
     id: root
 
-    required property var modelData
-    screen: modelData
+    shown: Clipboard.open
+    focusTarget: searchInput
+    onCloseRequested: Clipboard.open = false
 
-    WlrLayershell.keyboardFocus: WlrKeyboardFocus.Exclusive
-    anchors { top: true; bottom: true; left: true; right: true }
-    color: "transparent"
-    exclusionMode: ExclusionMode.Ignore
-
-    readonly property var i3Monitor: I3.monitors.values.length ? I3.monitorFor(root.screen) : null
-    visible: Clipboard.open && root.i3Monitor !== null && root.i3Monitor.focused
+    // Fresh open: clear the previous query (the base armed focus).
+    onOpened: {
+        searchInput.text = "";
+    }
 
     /// Filtered history (re-evaluates on every keystroke / ring change).
     property var filtered: Clipboard.items.filter(t =>
         t.toLowerCase().includes(searchInput.text.toLowerCase()))
 
     readonly property int listH: Math.min(root.filtered.length, 8) * Theme.popupRowHeight
-
-    // Fresh open: clear the previous query and arm keyboard focus.
-    onVisibleChanged: {
-        if (root.visible) {
-            searchInput.text = "";
-            Qt.callLater(() => searchInput.forceActiveFocus());
-        }
-    }
-
-    // Backdrop: click-away closes.
-    MouseArea {
-        anchors.fill: parent
-        onClicked: Clipboard.open = false
-    }
 
     // ── Centered card ──────────────────────────────────────────────────
     PopupShell {

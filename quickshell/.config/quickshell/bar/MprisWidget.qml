@@ -18,7 +18,9 @@ Rectangle {
     id: root
 
     // Players list is passed in so the binding re-evaluates when players
-    // appear/disappear (function calls alone are not tracked by QML).
+    // appear/disappear — reading `.values` (a tracked property) inside the
+    // JS function keeps it reactive (native method internals aren't
+    // tracked; QML JS function calls are).
     readonly property var player: pickPlayer(Mpris.players.values)
     readonly property bool hasPlayer: player !== null
     readonly property bool playing: player !== null && player.isPlaying

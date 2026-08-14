@@ -5,7 +5,6 @@ import Quickshell.Networking
 import QtQuick
 import QtQuick.Layouts
 import qs
-import qs.popups
 
 Rectangle {
     id: root

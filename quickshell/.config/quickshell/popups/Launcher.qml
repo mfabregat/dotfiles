@@ -5,32 +5,26 @@
 // Fuzzy search over desktop entries (name / generic / keywords / exec);
 // Enter launches the selection, Esc closes, clicking outside closes.
 import Quickshell
-import Quickshell.I3
-import Quickshell.Wayland._WlrLayerShell
 import QtQuick
 import qs
 import qs.services
 
-PanelWindow {
+OverlayWindow {
     id: root
 
-    required property var modelData
-    screen: modelData
+    // The base owns the window/visibility/focus/backdrop plumbing
+    // (i3Monitor guard, focused-monitor only, exclusive grab, Esc +
+    // backdrop → closeRequested). This file is the content + service glue.
+    shown: LauncherState.open
+    focusTarget: searchInput
+    onCloseRequested: LauncherState.open = false
 
-    // Fullscreen transparent surface: the backdrop catches click-away and
-    // exclusive keyboard focus powers typing + Esc while open (unmapped
-    // when hidden, so focus returns to the session). Only the centered
-    // card is drawn (rofi-like, no dim).
-    WlrLayershell.keyboardFocus: WlrKeyboardFocus.Exclusive
-    anchors { top: true; bottom: true; left: true; right: true }
-    color: "transparent"
-
-    // Focused monitor's launcher only. The I3.monitors.values guard makes
-    // the binding track valuesChanged and re-run the lookup once sway IPC
-    // connects (I3.monitorFor is native C++ — its internals aren't tracked
-    // by bindings; QML JS function calls ARE tracked).
-    readonly property var i3Monitor: I3.monitors.values.length ? I3.monitorFor(root.screen) : null
-    visible: LauncherState.open && root.i3Monitor !== null && root.i3Monitor.focused
+    // Fresh open: clear the previous query, select the top result (the
+    // base already armed keyboard focus — see OverlayWindow.opened).
+    onOpened: {
+        searchInput.text = "";
+        resultsList.currentIndex = 0;
+    }
 
     // Both arguments are tracked properties, so this re-evaluates on every
     // keystroke and once the (async) desktop entry scan completes.
@@ -51,27 +45,15 @@ PanelWindow {
             Math.min(resultsList.currentIndex + delta, root.results.length - 1));
     }
 
-    // Fresh open: clear the previous query, select the top result, and grab
-    // keyboard focus (deferred so the layer surface is mapped first).
-    onVisibleChanged: {
-        if (root.visible) {
-            searchInput.text = "";
-            resultsList.currentIndex = 0;
-            Qt.callLater(() => searchInput.forceActiveFocus());
-        }
-    }
+    // Fresh open: clear the previous query and select the top result
+    // (keyboard focus is armed by the base — see onOpened above).
 
     // Results rebuilt (every keystroke): selection returns to the top.
     onResultsChanged: {
         resultsList.currentIndex = 0;
     }
 
-    // ── Backdrop + centered card ──────────────────────────────
-    MouseArea {
-        id: backdrop
-        anchors.fill: parent
-        onClicked: LauncherState.open = false
-    }
+    // ── Centered card (the base owns the backdrop) ─────────────
 
     PopupShell {
         id: card

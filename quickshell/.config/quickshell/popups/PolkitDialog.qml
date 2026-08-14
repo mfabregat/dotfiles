@@ -10,27 +10,27 @@
 // is cleared and refocused for the retry. Success / cancel ends the flow
 // → agent.flow goes null → Polkit.active false → the dialog hides itself.
 import Quickshell
-import Quickshell.I3
-import Quickshell.Wayland._WlrLayerShell
 import QtQuick
 import qs
 import qs.services
 
-PanelWindow {
+// OverlayWindow base: fullscreen per screen, focused monitor only,
+// exclusive grab, no backdrop dismissal (modal — the surface swallows
+// clicks), Esc → closeRequested → doCancel. `shown` = an auth request is
+// active; the pwInput gets focus on open.
+OverlayWindow {
     id: root
 
-    required property var modelData
-    screen: modelData
+    shown: Polkit.active
+    dismissOnBackdrop: false
+    focusTarget: pwInput
+    onCloseRequested: root.doCancel()
 
-    WlrLayershell.keyboardFocus: WlrKeyboardFocus.Exclusive
-    anchors { top: true; bottom: true; left: true; right: true }
-    color: "transparent"
-
-    // Focused monitor's instance only (launcher pattern; the monitors
-    // guard tracks valuesChanged and re-runs the lookup once sway IPC
-    // connects — I3.monitorFor's internals aren't tracked by bindings).
-    readonly property var i3Monitor: I3.monitors.values.length ? I3.monitorFor(root.screen) : null
-    visible: Polkit.active && root.i3Monitor !== null && root.i3Monitor.focused
+    // Fresh prompt (or focus moved to this screen's instance): clear the
+    // previous attempt (the base armed keyboard focus — onOpened).
+    onOpened: {
+        pwInput.text = "";
+    }
 
     // Live flow reference — bindings re-evaluate when the agent replaces
     // or clears it (never cache the flow object).
@@ -43,16 +43,6 @@ PanelWindow {
 
     function doCancel(): void {
         if (root.flow) Polkit.cancel();
-    }
-
-    // Fresh prompt (or focus moved to this screen's instance): clear the
-    // previous attempt and grab keyboard focus (deferred so the layer
-    // surface is mapped first).
-    onVisibleChanged: {
-        if (root.visible) {
-            pwInput.text = "";
-            Qt.callLater(() => pwInput.forceActiveFocus());
-        }
     }
 
     // A failed attempt reuses the same flow with a fresh session: clear
@@ -198,15 +188,7 @@ PanelWindow {
                 visible: root.flow && root.flow.identities
                     && root.flow.identities.length > 1
 
-                Text {
-                    text: "Authenticate as"
-                    color: Theme.fgDim
-                    font.family: Theme.fontFamily
-                    font.pixelSize: Theme.fontSizeSmall
-                    font.bold: true
-                    font.capitalization: Font.AllUppercase
-                    font.letterSpacing: Theme.letterSpacing
-                }
+                SectionLabel { text: "Authenticate as" }
 
                 Repeater {
                     model: root.flow ? root.flow.identities : []

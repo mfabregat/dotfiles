@@ -1,49 +1,27 @@
-// popups/NotificationCenter.qml — notification history panel, one fullscreen
-// window per screen; only the focused monitor's instance is visible
-// (same pattern as the launcher). Toggled from the bar bell or via
+// popups/NotificationCenter.qml — notification history panel, one
+// fullscreen window per screen; only the focused monitor's instance is
+// visible (OverlayWindow base). Toggled from the bar bell or via
 // `quickshell ipc call notifications toggle` ($mod+n). Clicking the
 // backdrop or pressing Esc closes it; opening it marks everything read.
 import Quickshell
-import Quickshell.I3
-import Quickshell.Wayland._WlrLayerShell
 import QtQuick
 import qs
 import qs.popups
 import qs.services
 
-PanelWindow {
+OverlayWindow {
     id: root
 
-    required property var modelData
-    screen: modelData
-
-    WlrLayershell.keyboardFocus: WlrKeyboardFocus.Exclusive
-    anchors { top: true; bottom: true; left: true; right: true }
-    color: "transparent"
-    exclusionMode: ExclusionMode.Ignore
-
-    // Focused monitor's instance only. The I3.monitors.values guard makes
-    // the binding track valuesChanged and re-run once sway IPC connects
-    // (I3.monitorFor is native C++ — internals aren't tracked by bindings).
-    readonly property var i3Monitor: I3.monitors.values.length ? I3.monitorFor(root.screen) : null
-    visible: Notifications.centerOpen && root.i3Monitor !== null && root.i3Monitor.focused
+    // Base owns the window/visibility/focus/backdrop/Esc plumbing; the
+    // built-in focus catcher holds focus (focusTarget stays null).
+    shown: Notifications.centerOpen
+    onCloseRequested: Notifications.closeCenter()
 
     // Card height computed explicitly: padding + header + list + spacing +
     // empty state (plain Items don't contribute implicit sizes, so no
     // implicit propagation here), clamped to the screen.
     readonly property int listH: Math.min(Notifications.notifications.length * 96, 400)
     readonly property int emptyH: Notifications.notifications.length === 0 ? 18 : 0
-
-    // Fresh open: arm keyboard focus (deferred past surface mapping).
-    onVisibleChanged: {
-        if (root.visible) Qt.callLater(() => focusCatcher.forceActiveFocus());
-    }
-
-    // Backdrop: click-away closes.
-    MouseArea {
-        anchors.fill: parent
-        onClicked: Notifications.closeCenter()
-    }
 
     // ── Card (bottom-right, next to the bar) ───────────────────────────
     Rectangle {
@@ -155,18 +133,6 @@ PanelWindow {
                 font.pixelSize: Theme.fontSizeSmall
                 horizontalAlignment: Text.AlignHCenter
             }
-        }
-    }
-
-    // Invisible focus holder: Esc closes the center (launcher pattern —
-    // declarative focus + deferred forceActiveFocus past mapping).
-    Item {
-        id: focusCatcher
-        focus: true
-
-        Keys.onEscapePressed: {
-            Notifications.closeCenter();
-            event.accepted = true;
         }
     }
 }

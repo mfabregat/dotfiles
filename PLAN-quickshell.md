@@ -929,6 +929,77 @@ removal.
    daemon owns all outputs from login). ControlSlider/ToggleSwitch stay
    (AudioMenu volume slider + mute still use them).
 
+
+## Review pass (2026-08-14) — assumptions re-verified, ad-hoc → native
+
+User-requested full review: re-verify every load-bearing assumption
+(empirically, with throwaways), replace ad-hoc solutions with native
+approaches, and simplify structural duplication.
+
+### Assumption re-verification (fresh throwaway configs)
+
+| # | Claim | Result |
+|---|---|---|
+| R1 | `I3.monitorFor(screen)` needs the `.values.length` guard (native method internals not tracked) | **confirmed** — unguarded binding evaluates once at load and stays `null` forever even after sway IPC connects; the guarded version updates to `DP-1`. The guard pattern in 5 files is correct. |
+| R2 | `I3.focusedMonitor` needs no guard (notify property) | **confirmed** — updates without a guard. |
+| R3 | `Quickshell.screens` is a list property (`.length`, indexable) | **confirmed** — `.length` = 2 on this machine. |
+| R4 | ObjectModel `.values` is tracked (I3.workspaces) | **confirmed** — count re-evaluates live. |
+| R5 | landmine 9: `required property var modelData` breaks delegates | **confirmed** — implicit-modelData delegates create with `index`; `required` delegates fail. |
+| R6 | FileView: missing file never fires `onLoaded`, `.loaded` stays false | **confirmed** — enabled the native Wallpaper probe (below). |
+| R7 | PanelWindow `exclusionMode` default | **Auto** (panelinterface.hpp) — fullscreen 4-anchor overlays never reserved space, but implicitly; now explicit `Ignore` via the base. |
+
+### Changes made
+
+1. **CpuMemTemp: 1 Hz spawn → ONE streaming process.** The old
+   Timer+`running:true` re-exec spawned `sh`+`cat` twice a second forever
+   (at the plan's spawn budget). Now a single long-lived
+   `while :; do cat …; echo ===TICK===; sleep 1; done` streams ticks to a
+   SplitParser (marker-delimited, the verified clipboard-watch pattern) —
+   **0 spawns/s**. Verified live: real cpu/mem/temp/core values tick.
+2. **Wallpaper: `sh` probe → fully native.** `Quickshell.env("HOME")` +
+   FileView preload as the existence check (R6) — no spawn at all.
+   Verified: the path resolves at first lock.
+3. **SectionLabel extracted** (4th copy appeared — plan rule): shared
+   `popups/SectionLabel.qml`; PowerSection/AudioMenu/BacklightPopup drop
+   their inline copies, PolkitDialog's "Authenticate as" joins.
+4. **OverlayWindow base** (new): the fullscreen-overlay boilerplate
+   (PanelWindow plumbing, `exclusionMode: Ignore`, i3Monitor guard,
+   focused-monitor visibility, exclusive grab, backdrop, Esc, deferred
+   focus, `opened`/`closeRequested` signals) shared by Launcher,
+   NotificationCenter, ClipboardPopup, PolkitDialog — each file slims to
+   `shown`/`focusTarget`/`onCloseRequested`/`onOpened` + content. Polkit
+   stays modal (`dismissOnBackdrop: false`). Verified: launcher keyboard
+   grab/restore byte-identical to before (swaymsg tree checks).
+5. **MprisWidget comment fixed** — the stale "function calls alone are
+   not tracked" framing the playbook flagged was missed there; now says
+   `.values` reads keep JS functions reactive.
+6. **NetworkWidget**: dropped the unused `qs.popups` import (PopupManager
+   use went away with the menu click change).
+
+### Deliberately kept (ad-hoc by necessity, verified)
+
+- **grim** for screenshots (ScreencopyView deliberately avoided; grim -g
+  coords verified byte-identical to `-o`).
+- **wl-paste --watch** clipboard (native `clipboardText` verified not to
+  watch; RS-delimited chunking verified).
+- **gdbus** for the screenshot notification (no client-side notify API in
+  0.3.0).
+- **Brightness's sh backlight probe** (no native glob; one-time) and
+  **CpuMemTemp's sh+cat** (no native procfs API; now streaming).
+- **focusedScreen() duplication** in Osd/Notifications (2 copies; plan
+  rule extracts at 4).
+- **1 Hz cadence** (plan's verified budget — the mechanism, not the rate,
+  was the waste).
+
+### Remaining notes
+
+- The polkit refactor is behavior-equivalent but the auth flow wasn't
+  re-run (faillock rule — needs an interactive test).
+- Hot-reload staleness (phase-1 quirk 2) unchanged — restart after big
+  edits remains the workflow.
+- Night light stays removed (no established live-control integration;
+  indicator restored).
+
 ### Phase 6 review pass (2026-08-14)
 
 Read the pam conversation source (0.3.0) and re-audited every assumption:
