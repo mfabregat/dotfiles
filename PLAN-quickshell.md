@@ -891,6 +891,17 @@ reverts); startup-apply of persisted state spawns the daemon with the
 stored values; clean reload with 0 errors after the control center
 removal.
 
+
+   - **Popup row width landmine (2026-08-14):** every child of a popup's
+     PopupShell content column needs an explicit `width: parent.width`.
+     Rows that omit it collapse to 0-wide while the window is unmapped
+     (the implicit-width chain doesn't resolve hidden) — the night light
+     popup's sliders were invisible until each SliderRow got an explicit
+     width (verified: hidden 280×41 → shown 280×213, and the same pattern
+     is what makes PowerMenu/AudioMenu rows work). Landmine 15's "implicit
+     sizing unreliable" applies to height too: explicit heights + explicit
+     widths on every row; only Text/SectionLabel can rely on implicit.
+
 ### Phase 6 review pass (2026-08-14)
 
 Read the pam conversation source (0.3.0) and re-audited every assumption:

@@ -55,6 +55,7 @@ AnchoredPopup {
 
         // Temperature (1000–6500K)
         SliderRow {
+            width: parent.width
             label: "Temperature"
             valueText: NightLight.temperature + "K"
             from: NightLight.minTemp
@@ -66,6 +67,7 @@ AnchoredPopup {
 
         // Day / night brightness (gammastep -b DAY:NIGHT)
         SliderRow {
+            width: parent.width
             label: "Day brightness"
             valueText: Math.round(NightLight.dayBrightness * 100) + "%"
             from: 0.1
@@ -76,6 +78,7 @@ AnchoredPopup {
         }
 
         SliderRow {
+            width: parent.width
             label: "Night brightness"
             valueText: Math.round(NightLight.nightBrightness * 100) + "%"
             from: 0.1
