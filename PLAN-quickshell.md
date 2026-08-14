@@ -1000,6 +1000,38 @@ approaches, and simplify structural duplication.
 - Night light stays removed (no established live-control integration;
   indicator restored).
 
+
+### ScreencopyView experiment (2026-08-14, user question) — verdict: keep grim
+
+The user asked whether ScreencopyView (instead of grim) would improve the
+screenshot module and drop a dependency. Full prototype + verification was
+done; the answer is NO on this hardware:
+
+- The mechanism itself works: ScreencopyView + captureFrame +
+  `Item.grabToImage` + `GrabImageResult.saveToFile` produces PNGs, and a
+  clipped wrapper around a shifted full-frame view crops the selection
+  exactly (grabToImage has no source rect). `exclusionMode: Ignore` is
+  required for a truly fullscreen window (the bar's exclusive zone
+  otherwise squeezes it and breaks the 1:1 crop mapping).
+- BUT frame delivery through quickshell's wlr-screencopy client is
+  **nondeterministic on this machine**: the exact config that delivered
+  frames in early throwaway instances failed 2/2 in fresh instances, and
+  fresh-view-per-capture delivered 0/3. The creation-time auto-capture
+  (createContext() → captureFrame()) and late `captureSource` assignment
+  behaved differently across instances. This is the plan's "capture
+  flakiness" warning made real (likely aggravated by `--unsupported-gpu` /
+  NVIDIA buffer-copy path).
+- grim (same wlr-screencopy protocol, separate process) delivers 100% of
+  the time here (dozens of captures, byte-identical `-o` vs `-g`
+  results). Removing grim would trade a reliable capture for a flaky one
+  to save one small dependency — the plan's original "deliberately avoids
+  ScreencopyView" decision stands, now with empirical support.
+
+Also learned: setting `captureSource` auto-starts a capture, so
+`hasContentChanged` fires at startup, NOT per manual captureFrame —
+relying on it for per-frame work is a trap (there is no per-frame QML
+signal; `stopped` is the only other signal).
+
 ### Phase 6 review pass (2026-08-14)
 
 Read the pam conversation source (0.3.0) and re-audited every assumption:
