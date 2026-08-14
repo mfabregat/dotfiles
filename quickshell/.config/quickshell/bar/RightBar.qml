@@ -55,11 +55,6 @@ Scope {
                 anchorWindow: barWindow
             }
 
-            NightLightPopup {
-                id: nightLightPopup
-                anchorWindow: barWindow
-            }
-
             BacklightPopup {
                 id: backlightPopup
                 anchorWindow: barWindow
@@ -116,10 +111,6 @@ Scope {
 
                         BacklightWidget {
                             backlightPopup: backlightPopup
-                        }
-
-                        NightLightWidget {
-                            nightLightPopup: nightLightPopup
                         }
 
                         NetworkWidget {

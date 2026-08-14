@@ -69,7 +69,7 @@ Singleton {
     readonly property int pillHeight: 18
 
     // ── Typography & icons (three sizes only) ─────────────────────────
-    readonly property int fontSizeSmall: 8   // small labels (percentages, artist)
+    readonly property int fontSizeSmall: 12   // small labels (percentages, artist)
     readonly property int fontSize: 14        // general text (track title, menus)
     readonly property int fontSizeGlyphs: 16 // icons and status glyphs
 }

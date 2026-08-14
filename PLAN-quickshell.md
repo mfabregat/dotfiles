@@ -902,6 +902,33 @@ removal.
      sizing unreliable" applies to height too: explicit heights + explicit
      widths on every row; only Text/SectionLabel can rely on implicit.
 
+
+3. **Night light removed; gammastep-indicator restored** (user decision
+   after the daemon rework still showed multi-output races + slider
+   drift). The research the user asked for came up empty — there is no
+   established live-adjustment integration for gammastep:
+   - gammastep master is 2.0.11 (same as installed): no DBus control, no
+     config watching, no SIGHUP reload; SIGUSR1 toggles the filter only
+     (signals.c). The only established integrations are the indicator
+     (spawn `gammastep -v` daemon, SIGUSR1 toggle, values from config)
+     and ekremx25's `-O` one-shot (broken on wlr — verified: `-O`/`-x`
+     never exit and later clients get "zero outputs support").
+   - wlroots source (types/wlr_gamma_control_v1.c): when the gamma
+     control client disconnects, `set_gamma` is emitted with a NULL
+     table — **sway resets the LUT**. The daemon must stay alive, and
+     every value change needs a restart whose kill→exec gap races
+     per-output ownership ("sometimes only one output changes").
+   - The "slider drift while pressed" report was not root-caused from
+     source; given no established pattern to match and the user's
+     explicit fallback, the component was removed instead of debugged.
+   Removed: services/NightLight.qml, popups/NightLightPopup.qml,
+   bar/NightLightWidget.qml, the `nightlight` IPC target; sway autostart
+   restores `exec_always sh -c 'pkill -x gammastep; exec
+   gammastep-indicator'` (tray toggle + status, config-driven values —
+   the user's original setup, which also fixes multi-monitor since the
+   daemon owns all outputs from login). ControlSlider/ToggleSwitch stay
+   (AudioMenu volume slider + mute still use them).
+
 ### Phase 6 review pass (2026-08-14)
 
 Read the pam conversation source (0.3.0) and re-audited every assumption:

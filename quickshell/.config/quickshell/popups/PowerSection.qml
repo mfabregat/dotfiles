@@ -118,7 +118,7 @@ Column {
             text: armed ? row.armText : row.label
             color: armed ? Theme.warn : Theme.fg
             font.family: Theme.fontFamily
-            font.pixelSize: Theme.fontSize
+            font.pixelSize: Theme.fontSizeSmall
             Behavior on color { ColorAnimation { duration: 150 } }
         }
 
