@@ -55,6 +55,16 @@ Scope {
                 anchorWindow: barWindow
             }
 
+            NightLightPopup {
+                id: nightLightPopup
+                anchorWindow: barWindow
+            }
+
+            BacklightPopup {
+                id: backlightPopup
+                anchorWindow: barWindow
+            }
+
             // Dismiss any open popup when pressing empty bar space (the
             // widgets' own MouseAreas dismiss on their presses too).
             MouseArea {
@@ -104,7 +114,13 @@ Scope {
                             audioMenu: audioMenu
                         }
 
-                        BacklightWidget {}
+                        BacklightWidget {
+                            backlightPopup: backlightPopup
+                        }
+
+                        NightLightWidget {
+                            nightLightPopup: nightLightPopup
+                        }
 
                         NetworkWidget {
                             networkMenu: networkMenu

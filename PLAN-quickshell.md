@@ -834,6 +834,63 @@ are untestable live here (no wifi hardware); the native API paths were
 verified against the docs + qmltypes, and the UI hides gracefully
 (machine-agnostic per the plan).
 
+
+## Phase 7 follow-up (2026-08-14, user-driven rework)
+
+Two user-driven changes after the phase 7 log:
+
+1. **Control center removed** — the user prefers one popup per feature.
+   The control center's sections moved to their own bar-anchored popups:
+   - `popups/AudioMenu.qml`: + volume slider + mute switch (Pipewire
+     writes, no spawns) above the existing sink list.
+   - `popups/BacklightPopup.qml` (new): brightness slider
+     (brightnessctl writes, 120ms debounce); `bar/BacklightWidget.qml`
+     click opens it (was a 5% step), wheel unchanged.
+   - `popups/NightLightPopup.qml` (new) + `bar/NightLightWidget.qml`
+     (new, moon glyph turns warm when active): toggle + temperature +
+     day/night brightness sliders. Sliders update state live but only
+     restart the gammastep daemon on RELEASE (a restart is a ~50ms
+     neutral flash — see below).
+   - Deleted `popups/ControlCenter.qml` + `services/ControlCenter.qml`;
+     sway `$mod+Shift+c` + `$controlcenter` removed (key is free).
+
+2. **gammastep integration fixed** — the phase-7 one-shot approach was
+   fundamentally broken on wlr. Root-caused live (2026-08-14) and
+   rewritten as a single-daemon design:
+
+   - **`gammastep -O` and `-x` never exit** — both print "Press ctrl-c
+     to stop..." and stay connected to the compositor forever.
+   - **wlr-gamma-control allows exactly ONE owner per output.** Every
+     later process reports "Zero outputs support gamma adjustment" but
+     hangs anyway. The phase-7 code spawned one process per change;
+     the user ended up with ~30 hung processes and no visible change
+     (only the first held gamma, and its values were stale).
+   - **No config file watching, no SIGHUP reload** (verified in the
+     2.0.11 source: the config is read once at startup; SIGUSR1 only
+     toggles disable). The "elegant real-time" answer: ONE long-lived
+     daemon, values changed by restarting it (kill + exec), toggle off
+     by killing it (sway reverts the LUT when the client disconnects).
+   - The daemon is spawned detached from quickshell (survives restarts)
+     and sway does NOT run gammastep (one owner only — verified: two
+     daemons = second hangs). Apply: `gammastep -O <K> -P -g 1.0 -b
+     <d>:<n>` (constant temperature, -b day/night by solar elevation,
+     -g 1.0 neutralizes the user config's gamma so the brightness
+     sliders own dimming; location + method come from the user's
+     gammastep config). Disabled = pkill (no process left).
+   - **Cosmetic quirk:** gammastep NUL-splits the `-b`/`-t` argv string
+     in place while parsing `DAY:NIGHT`, so `ps` shows `-b 0.42 0.63`
+     — the colon became a NUL. Values were always parsed correctly;
+     don't "fix" the args based on ps output.
+   - Slider UX: apply on release (one restart per drag), not per tick
+     (restarting per tick flickers — the LUT resets during the ~50ms
+     kill/exec gap).
+
+Verified live: toggle on → exactly one persistent gammastep process
+holding gamma; idempotent re-toggle; toggle off → zero processes (LUT
+reverts); startup-apply of persisted state spawns the daemon with the
+stored values; clean reload with 0 errors after the control center
+removal.
+
 ### Phase 6 review pass (2026-08-14)
 
 Read the pam conversation source (0.3.0) and re-audited every assumption:

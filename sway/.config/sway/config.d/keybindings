@@ -21,13 +21,15 @@ bindsym $mod+shift+b exec $browser --incognito
 
 bindsym $mod+s exec spotify
 
+# Control center removed (2026-08-14): every feature lives in its own
+# bar-anchored popup now (audio, brightness, night light, network, power).
+
 # Screenshots: Print = area picker, Shift+Print = fullscreen (grim via
 # the quickshell Screenshot service — replaces the old grimshot bind).
 bindsym Print exec $screenshot
 bindsym Shift+Print exec quickshell ipc call screenshot full
 
-# Control center / clipboard history (quickshell IPC)
-bindsym $mod+Shift+c exec $controlcenter
+# Clipboard history (quickshell IPC)
 bindsym $mod+Shift+v exec $clipboard
 
 # Drag floating windows by holding down $mod and left mouse button.

@@ -51,15 +51,6 @@ ShellRoot {
         PolkitDialog {}
     }
 
-    // Control center: one fullscreen window per screen; only the focused
-    // monitor's instance is visible (see popups/ControlCenter.qml). Its
-    // bindings instantiate the NightLight/WifiState services at startup,
-    // so night-light state applies on load, not on first open.
-    Variants {
-        model: Quickshell.screens
-        ControlCenter {}
-    }
-
     // Clipboard history: one fullscreen window per screen; only the
     // focused monitor's instance is visible (see popups/ClipboardPopup.qml).
     Variants {

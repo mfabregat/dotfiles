@@ -30,8 +30,10 @@ sudo pacman -S quickshell pipewire brightnessctl polkit networkmanager upower sw
 - `networkmanager` (network state), `upower` (battery), `polkit` (auth
   agent), `wl-clipboard` (phase-7 clipboard manager — wl-paste watch +
   wl-copy; without it the clipboard popup shows an unavailable hint),
-  `grim` (screenshots), `gammastep` (phase-7 night light in the control
-  center; the old gammastep-indicator tray app is gone).
+  `grim` (screenshots), `gammastep` (night light in the bar popup; the
+  old gammastep-indicator tray app is gone — quickshell runs one
+  gammastep daemon and restarts it on changes; the daemon needs the
+  user's gammastep config for the location provider).
 - Sway ≥ 1.8 required (ext-session-lock for the phase-6 lock screen).
 
 

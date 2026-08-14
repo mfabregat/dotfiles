@@ -1,16 +1,37 @@
 // services/NightLight.qml — gammastep wrapper (blue-light filter).
-// Replaces the old gammastep-indicator tray app (its sway autostart line
-// is gone); the control center hosts the toggle + sliders.
 //
-// Apply model (verified against the installed gammastep 2.0.11, -p print
-// mode): enabled → `gammastep -O <K> -P -b <day>:<night>` — one-shot, the
-// process applies the gamma ramps and exits (no daemon), -O keeps the
-// temperature constant and -b picks the day/night brightness by the
-// current solar elevation. disabled → `gammastep -x` (reset ramps).
+// Architecture (2026-08-14 redesign — verified against gammastep 2.0.11
+// source + live behavior):
+// - gammastep runs as ONE long-lived daemon. `-O` and `-x` modes do NOT
+//   exit ("Press ctrl-c to stop...") — they stay connected to the
+//   compositor, and wlr-gamma-control allows exactly ONE owner per
+//   output. Every extra process fails with "Zero outputs support gamma
+//   adjustment" but hangs anyway — the old code accumulated ~30 of them
+//   and nothing visibly changed. Never spawn more than one: change
+//   values by restarting it (kill + exec, ~50ms neutral flash), toggle
+//   off by killing it (sway reverts the gamma LUT when the client
+//   disconnects).
+// - gammastep has NO config file watching and no SIGHUP reload — the
+//   config is read once at startup; SIGUSR1 only toggles disable
+//   (signals.c / redshift.c, verified in source). Value changes therefore
+//   go through a daemon restart, not a config edit.
+// - The daemon is spawned detached (survives quickshell restarts); sway
+//   does NOT run gammastep — one owner only.
+// - Cosmetic quirk: gammastep NUL-splits the -b/-t argv strings in place
+//   while parsing DAY:NIGHT, so `ps` shows `-b 0.42 0.63` — the colon
+//   became a NUL; the values were always parsed correctly.
 //
-// State persists to ~/.local/state/quickshell-nightlight (JSON) so the
-// filter survives logins: written on every change (user-driven, no
-// tickers), read once at startup, then applied.
+// Apply model: enabled → `gammastep -O <K> -P -g 1.0 -b <d>:<n>` —
+// constant temperature (the single slider), -b picks the day/night
+// brightness by solar elevation, -g 1.0 neutralizes the user config's
+// gamma so the brightness sliders own dimming, location + adjustment
+// method come from the user's gammastep config. disabled → kill the
+// daemon (gamma reverts to neutral, no process left).
+//
+// State persists to ~/.local/state/quickshell-nightlight (JSON): written
+// on change (debounced), read + applied once at startup. Slider changes
+// do NOT auto-apply — the popup calls apply() on slider release so a
+// drag doesn't restart the daemon every tick.
 pragma Singleton
 
 import Quickshell
@@ -24,7 +45,7 @@ Singleton {
     property bool available: false
     /// Filter active.
     property bool enabled: false
-    /// One-shot color temperature in Kelvin.
+    /// Constant color temperature in Kelvin.
     property int temperature: 4000
     /// gammastep -b DAY:NIGHT values (screen brightness 0.1–1.0).
     property real dayBrightness: 1.0
@@ -77,34 +98,22 @@ Singleton {
         root.maybeApply();
     }
 
-    // ── Apply ──────────────────────────────────────────────────────────
-    // Slider drags re-apply through a short debounce (gammastep is a
-    // few-hundred-ms spawn each time).
-    Timer {
-        id: applyDebounce
-        interval: 150
-        repeat: false
-        onTriggered: root.apply()
-    }
-
-    Timer {
-        id: saveDebounce
-        interval: 300
-        repeat: false
-        onTriggered: root.saveState()
-    }
-
+    // ── Apply: one daemon, restarted on change ─────────────────────────
+    /// Bring the daemon in line with the current state. Enabled: kill any
+    /// leftover and spawn one with the current values (the sh exec
+    /// replaces the shell, so exactly one detached gammastep remains).
+    /// Disabled: kill the daemon — the gamma LUT reverts to neutral.
     function apply(): void {
         if (!root.available) return;
         if (root.enabled) {
             Quickshell.execDetached([
-                "gammastep", "-O", String(root.temperature), "-P",
-                "-b", root.dayBrightness.toFixed(2) + ":" + root.nightBrightness.toFixed(2)
+                "sh", "-c",
+                'pkill -x gammastep 2>/dev/null; exec gammastep -O "$1" -P -g 1.0 -b "$2"',
+                "--", String(root.temperature),
+                root.dayBrightness.toFixed(2) + ":" + root.nightBrightness.toFixed(2)
             ]);
         } else {
-            // Also resets any leftover filter from the old gammastep
-            // daemon / a previous session.
-            Quickshell.execDetached(["gammastep", "-x"]);
+            Quickshell.execDetached(["sh", "-c", "pkill -x gammastep 2>/dev/null"]);
         }
     }
 
@@ -112,7 +121,10 @@ Singleton {
         if (root.available && root.stateLoaded) root.apply();
     }
 
-    // ── Setters (state + debounced apply/save) ─────────────────────────
+    // ── Setters ────────────────────────────────────────────────────────
+    // Setters update state + persist (debounced) but never restart the
+    // daemon themselves — the popup calls apply() on slider release and
+    // setEnabled applies immediately (a toggle must feel instant).
     function setEnabled(v: bool): void {
         if (root.enabled === v) return;
         root.enabled = v;
@@ -125,7 +137,6 @@ Singleton {
         if (t === root.temperature) return;
         root.temperature = t;
         saveDebounce.restart();
-        if (root.enabled) applyDebounce.restart();
     }
 
     function setDayBrightness(v: real): void {
@@ -133,7 +144,6 @@ Singleton {
         if (b === root.dayBrightness) return;
         root.dayBrightness = b;
         saveDebounce.restart();
-        if (root.enabled) applyDebounce.restart();
     }
 
     function setNightBrightness(v: real): void {
@@ -141,7 +151,6 @@ Singleton {
         if (b === root.nightBrightness) return;
         root.nightBrightness = b;
         saveDebounce.restart();
-        if (root.enabled) applyDebounce.restart();
     }
 
     function clampTemp(k: int): int {
@@ -152,6 +161,13 @@ Singleton {
     function clampB(v: real): real {
         if (isNaN(v)) return 1.0;
         return Math.max(0.1, Math.min(1.0, Math.round(v * 100) / 100));
+    }
+
+    Timer {
+        id: saveDebounce
+        interval: 300
+        repeat: false
+        onTriggered: root.saveState()
     }
 
     /// Persist state to the state file (one rare spawn, user-driven).

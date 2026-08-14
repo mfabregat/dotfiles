@@ -1,5 +1,5 @@
 // bar/BacklightWidget.qml — screen brightness (brightnessctl).
-// Left click: cycle 5 steps · scroll: ±5%.
+// Click: brightness popup (slider) · scroll: ±5%.
 import Quickshell
 import QtQuick
 import QtQuick.Layouts
@@ -9,6 +9,8 @@ import qs.services
 
 Rectangle {
     id: root
+
+    required property var backlightPopup
 
     readonly property int percent: Brightness.percent
 
@@ -44,12 +46,11 @@ Rectangle {
         id: area
         anchors.fill: parent
         hoverEnabled: true
-        onPressed: PopupManager.hideOpen()
+        onClicked: root.backlightPopup.showAt(root)
 
         onWheel: (wheel) => {
             const dir = wheel.angleDelta.y > 0 ? "+" : "-";
             Quickshell.execDetached(["brightnessctl", "set", "5%" + dir]);
         }
-        onClicked: Quickshell.execDetached(["brightnessctl", "set", "5%-"])
     }
 }
