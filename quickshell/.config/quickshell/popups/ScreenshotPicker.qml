@@ -68,6 +68,13 @@ PanelWindow {
             }
         }
         onReleased: {
+            if ((mouse.modifiers & Qt.ControlModifier) && !root.selecting) {
+                // Ctrl+click: capture the window under the cursor.
+                Screenshot.captureWindowAt(
+                    Math.round(root.screen.x + mouse.x),
+                    Math.round(root.screen.y + mouse.y));
+                return;
+            }
             if (root.selecting) {
                 Screenshot.captureRect(root.rsx, root.rsy, root.sw, root.sh, root.screen);
             } else {
@@ -160,7 +167,7 @@ PanelWindow {
         Text {
             id: hint
             anchors.centerIn: parent
-            text: "Drag to select · click = fullscreen · Esc = cancel"
+            text: "Drag to select · click = fullscreen · Ctrl+click = window · Esc = cancel"
             color: Theme.fgDim
             font.family: Theme.fontFamily
             font.pixelSize: Theme.fontSizeSmall

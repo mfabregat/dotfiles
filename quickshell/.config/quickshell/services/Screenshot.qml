@@ -84,6 +84,78 @@ Singleton {
             + Math.round(scr.width) + "x" + Math.round(scr.height));
     }
 
+    // ── Window pick (ctrl+click in the picker) ──────────────────────────
+    // The native ToplevelManager exposes NO window geometry (only
+    // appId/title/activated/screens — verified in the qmltypes), and the
+    // I3 module has no node trees, so a single `swaymsg -t get_tree` parse
+    // per user click is the established way (grimshot does the same).
+    // Event-driven (human-scale, well under the spawn budget) — not the
+    // taskbar pattern the plan's no-get_tree rule targets.
+    Process {
+        id: treeProc
+        command: ["swaymsg", "-t", "get_tree"]
+        running: false
+        stdout: StdioCollector {
+            onStreamFinished: root.onTree(this.text)
+        }
+    }
+
+    property int pickX: 0
+    property int pickY: 0
+
+    /// Ctrl+click in the picker: capture the window under the cursor
+    /// (cursor in output-layout coords). The picker stays up during the
+    /// lookup; capture() hides it before grim runs.
+    function captureWindowAt(gx: int, gy: int): void {
+        root.pickX = gx;
+        root.pickY = gy;
+        treeProc.running = false;
+        treeProc.running = true;
+    }
+
+    function onTree(text: string): void {
+        let tree = null;
+        try {
+            tree = JSON.parse(text);
+        } catch (e) {
+            console.log("[screenshot] get_tree parse failed: " + e);
+            return;
+        }
+        const rect = root.findWindowRect(tree, root.pickX, root.pickY);
+        if (!rect) {
+            console.log("[screenshot] no window under cursor");
+            return;
+        }
+        root.capture(Math.round(rect.x) + "," + Math.round(rect.y) + " "
+            + Math.round(rect.width) + "x" + Math.round(rect.height));
+    }
+
+    /// Walk the sway tree and return the rect of the visible window
+    /// containing (x, y). Floating windows are drawn above tiled ones in
+    /// sway; within a class the last one walked (most recent in the tree)
+    /// wins. (Logic mirrored in a node unit test.)
+    function findWindowRect(node: var, x: int, y: int): var {
+        let best = null;
+        let order = 0;
+        const walk = (n, floating) => {
+            if (n.type === "con" && n.app_id && n.visible) {
+                const r = n.rect;
+                if (r && x >= r.x && x < r.x + r.width && y >= r.y && y < r.y + r.height) {
+                    const cand = { rect: r, floating: floating, order: order++ };
+                    if (!best
+                        || cand.floating > best.floating
+                        || (cand.floating === best.floating && cand.order > best.order)) {
+                        best = cand;
+                    }
+                }
+            }
+            for (const c of (n.nodes || [])) walk(c, floating);
+            for (const c of (n.floating_nodes || [])) walk(c, true);
+        };
+        walk(node, false);
+        return best ? best.rect : null;
+    }
+
     /// Screen whose monitor is focused (by name), falling back to the
     /// first screen. I3.focusedMonitor is a notify property — no guard
     /// needed (playbook).

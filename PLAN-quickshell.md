@@ -1032,6 +1032,17 @@ Also learned: setting `captureSource` auto-starts a capture, so
 relying on it for per-frame work is a trap (there is no per-frame QML
 signal; `stopped` is the only other signal).
 
+
+- **Window capture added (2026-08-14)** — ctrl+click in the picker
+  captures the window under the cursor (Ubuntu-style). The native
+  ToplevelManager exposes no geometry (appId/title/activated/screens
+  only — verified in the qmltypes), so a single `swaymsg -t get_tree`
+  parse per click is used (grimshot's approach — event-driven, not the
+  taskbar pattern the no-get_tree rule targets). `findWindowRect` prefers
+  floating over tiled (sway draws floating above) and last-walked within
+  a class; unit-tested 8/8 (real tree + synthetic cases) and the full
+  chain verified live (click a window center → exact window-sized PNG).
+
 ### Phase 6 review pass (2026-08-14)
 
 Read the pam conversation source (0.3.0) and re-audited every assumption:
