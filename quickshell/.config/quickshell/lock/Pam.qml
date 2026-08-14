@@ -7,9 +7,17 @@
 // custom service is `auth required pam_unix.so` (password only, no
 // fingerprint), matching the plan.
 //
-// This component is instantiated once inside Lock.qml and shared by every
-// per-screen LockSurface: `currentText` / `unlockInProgress` / `showFailure`
-// are the single source of truth so all monitors show the same state.
+// Instantiated once inside Lock.qml and shared by every per-screen
+// LockSurface: `currentText` / `unlockInProgress` / `failureText` are the
+// single source of truth so all monitors show the same state.
+//
+// Conversation lifecycle (verified in the 0.3.0 source): pam.start() spawns
+// a fresh subprocess; pam_unix prompts once for the password (pamMessage,
+// responseRequired) and respond() feeds it back. On completion the
+// conversation is torn down (`conversation = null`), so a failed attempt
+// can simply start() again. abort() (Esc) SIGKILLs the subprocess and
+// emits nothing — no spurious failure state. Errors emit `error` AND then
+// `completed(Error)` — handle Error in onCompleted only.
 import Quickshell
 import Quickshell.Services.Pam
 import QtQuick
@@ -23,33 +31,26 @@ Scope {
     /// Shared password buffer (mirrored by every surface's input field).
     property string currentText: ""
     property bool unlockInProgress: false
-    /// A failed attempt (wrong password / PAM error).
-    property bool showFailure: false
-    /// PAM's last message, e.g. the unix_chkpwd "password incorrect" note.
-    property string pamMessage: ""
-    readonly property bool active: pam.active
+    /// Failure/error message to show in red ("" = no failure).
+    property string failureText: ""
 
     // Typing again clears the failure state (swaylock-style).
-    onCurrentTextChanged: root.showFailure = false
+    onCurrentTextChanged: root.failureText = ""
 
     /// Start the PAM conversation with the buffered password.
     function tryUnlock(): void {
-        if (root.unlockInProgress) return;
-        if (root.currentText.length === 0) return;
+        if (root.unlockInProgress || root.currentText.length === 0) return;
+        root.failureText = "";
         root.unlockInProgress = true;
         pam.start();
     }
 
-    /// Abort an in-flight conversation (Esc on the lock screen).
+    /// Abort an in-flight conversation and clear the buffer (Esc).
     function cancel(): void {
         if (pam.active) pam.abort();
         root.unlockInProgress = false;
-    }
-
-    /// Clear the buffer (Esc with nothing in flight).
-    function clear(): void {
         root.currentText = "";
-        root.showFailure = false;
+        root.failureText = "";
     }
 
     PamContext {
@@ -62,37 +63,26 @@ Scope {
         configDirectory: Quickshell.shellPath("lock/assets/pam.d")
 
         // pam_unix asks for the password exactly once per conversation:
-        // respond with the buffered text (the buffer is cleared on
-        // completion, not here — keep it for any follow-up prompt).
+        // respond with the buffered text (cleared on completion).
         // (bare `pam.` — ids don't resolve via `root.<id>`; verified
         // 2026-08-14 in a throwaway config)
         onPamMessage: {
-            root.pamMessage = pam.message;
-            if (pam.responseRequired) {
-                pam.respond(root.currentText);
-            }
+            if (pam.responseRequired) pam.respond(root.currentText);
         }
 
         onCompleted: result => {
             root.unlockInProgress = false;
             root.currentText = "";
             if (result === PamResult.Success) {
-                root.pamMessage = "";
-                root.showFailure = false;
+                root.failureText = "";
                 root.unlocked();
             } else if (result === PamResult.MaxTries) {
-                root.pamMessage = "Too many attempts";
-                root.showFailure = true;
+                root.failureText = "Too many attempts";
+            } else if (result === PamResult.Error) {
+                root.failureText = "Authentication error";
             } else {
-                root.pamMessage = "Incorrect password";
-                root.showFailure = true;
+                root.failureText = "Incorrect password";
             }
-        }
-
-        onError: err => {
-            root.unlockInProgress = false;
-            root.pamMessage = "Authentication error";
-            root.showFailure = true;
         }
     }
 }

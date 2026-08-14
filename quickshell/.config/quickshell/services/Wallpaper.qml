@@ -1,11 +1,16 @@
 // services/Wallpaper.qml — the wallpaper image the lock screen blurs.
 // The sway config paints the same image (`output * bg ../wallpaper.jpg` in
-// config.d/output), so the lock screen's blurred background matches the
-// desktop exactly — no screencopy, no capture races (plan: wallpaper blur).
+// config.d/output, relative to ~/.config/sway), so the lock screen's blurred
+// background matches the desktop exactly — no screencopy, no capture races
+// (plan: wallpaper blur).
 //
-// The path is probed once at startup (Process pattern, like Brightness):
-// the first existing candidate wins. No periodic spawns. `url` is the
-// file:// form QML Image sources need; `path` is the plain absolute path.
+// One-time probe (runs on first use — the LockSurface's Image binding
+// instantiates this singleton lazily at the first lock): QML cannot expand
+// $HOME and has no native file-exists check, so the probe is a single `sh`
+// builtin test — the same availability-probe pattern Brightness uses for
+// /sys/class/backlight (no optional binaries). No periodic spawns. If the
+// file is missing, `url` stays "" and the lock surface shows its solid
+// gruvbox base (the Image simply fails to load).
 pragma Singleton
 
 import Quickshell
@@ -15,17 +20,14 @@ import QtQuick
 Singleton {
     id: root
 
-    /// Absolute path of the wallpaper image ("" when none found).
-    property string path: ""
-    /// file:// URL for QML Image sources ("" when none found).
+    /// file:// URL of the wallpaper image ("" when none found).
     readonly property string url: root.path.length > 0 ? "file://" + root.path : ""
+    property string path: ""
 
     Process {
         id: probe
 
-        command: ["sh", "-c",
-            "for p in \"$HOME/.config/sway/wallpaper.jpg\" \"$HOME/.config/sway/wallpaper.png\"; do "
-            + "[ -r \"$p\" ] && { echo \"$p\"; break; }; done"]
+        command: ["sh", "-c", "[ -r \"$HOME/.config/sway/wallpaper.jpg\" ] && echo \"$HOME/.config/sway/wallpaper.jpg\""]
         running: false
 
         stdout: StdioCollector {
@@ -37,8 +39,5 @@ Singleton {
         }
     }
 
-    Component.onCompleted: {
-        console.log("[wallpaper] singleton instantiated");
-        probe.running = true;
-    }
+    Component.onCompleted: probe.running = true
 }

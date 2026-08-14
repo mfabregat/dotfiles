@@ -14,13 +14,14 @@
 //   - sway:        bindsym $mod+P exec quickshell ipc call lock lock
 //   - swayidle:    timeout 300 'quickshell ipc call lock lock'
 //   - power menu:  quickshell ipc call lock lock (popups/PowerMenu.qml)
+//
+// DPMS: turning it back on is swayidle's `resume` job (any unlock involves
+// typing → input → resume → `swaymsg output "*" dpms on`). No spawn here.
 import Quickshell
 import Quickshell.Io
 import Quickshell.Wayland
 import QtQuick
 import qs
-import qs.lock
-import qs.services
 
 Scope {
     id: root
@@ -33,12 +34,6 @@ Scope {
     // unlock path symmetrically; the compositor-side confirmation comes
     // from onSecureStateChanged).
     onLockedChanged: console.log("[lock] state: " + (root.locked ? "locked" : "unlocked"))
-
-    // Eagerly instantiate the Wallpaper service at startup: the probe runs
-    // once now, so the first lock already has the wallpaper path (the
-    // LockSurface Image binding would otherwise create it lazily and the
-    // first lock would wait ~1 frame for the probe).
-    readonly property var wallpaperProbe: Wallpaper.url
 
     WlSessionLock {
         id: lock
@@ -66,12 +61,7 @@ Scope {
     Pam {
         id: auth
 
-        onUnlocked: {
-            root.locked = false;
-            // Typing already fired swayidle's resume (DPMS back on), but
-            // an IPC unlock may not have; idempotent, once per unlock.
-            Quickshell.execDetached(["swaymsg", "output", "*", "dpms", "on"]);
-        }
+        onUnlocked: root.locked = false
     }
 
     // IPC entry point: quickshell ipc call lock lock|unlock|isLocked

@@ -696,6 +696,42 @@ behavior under the quickshell lock needs the user's confirm (next
 interactive session) — sway handles them independently of the lock
 surface.
 
+### Phase 6 review pass (2026-08-14)
+
+Read the pam conversation source (0.3.0) and re-audited every assumption:
+
+- **abort() emits nothing** — Esc (Pam.cancel) SIGKILLs the subprocess and
+  fires no completed/error signal, so no spurious failure text; the next
+  tryUnlock starts a fresh conversation (onCompleted/onError both call
+  abortConversation → conversation=null → start() works).
+- **Errors fire BOTH error and completed(Error)** — the onError handler was
+  dead code (completed(Error) overwrote its message, and the order is
+  error-then-completed). Dropped onError; onCompleted handles Error →
+  "Authentication error" explicitly.
+- **Pam.qml simplified**: showFailure + pamMessage + unused active alias
+  → single `failureText` ("" = no failure). pam_unix sends no meaningful
+  messages, so the message plumbing was pure state.
+- **Lock.qml: dropped the `wallpaperProbe` eager-instantiation hack** —
+  lazy singleton creation at first lock is fine (the probe is ~1 frame
+  behind a dark0 base, invisible). Simpler.
+- **Lock.qml: dropped the `swaymsg dpms on` spawn on unlock** — every real
+  unlock involves typing → input → swayidle `resume` already runs `dpms
+  on`; the IPC-unlock path is test-only. Redundant spawn gone.
+- **LockSurface.qml**: native rendering dropped (antialiases poorly over a
+  photo background — the official example's tip applies to solid-color
+  locks); `cache: false` dropped (default image cache makes relocks
+  instant); Column restructured (nested columns instead of a 28+44
+  wrapper Item); unused ids removed.
+- **Wallpaper.qml**: dropped the .png fallback candidate — this repo's
+  sway config always paints wallpaper.jpg; swapping the file type would
+  break sway's `bg` line anyway. Single sh-builtin probe remains (QML has
+  no $HOME expansion or file-exists check; same probe pattern as
+  Brightness's backlight scan). Missing file → url "" → Image fails →
+  dark0 base.
+
+Re-verified live: clean load, lock → secure → unlock cycle with 0 errors,
+wallpaper probe resolves at first lock.
+
 ### Phase 5 review pass (2026-08-13)
 
 - **Brightness: ad-hoc 500ms poll → native FileView watch.** The plan's
