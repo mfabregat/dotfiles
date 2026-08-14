@@ -22,6 +22,17 @@ cd ~/dotfiles
 stow package
 ```
 
+## Colors
+
+All colors are defined once in [`palette/palette.json`](palette/palette.json)
+(quickshell, sway, helium, ghostty derive from it). To restyle everything:
+
+```bash
+python3 palette/generate.py   # regenerate derived configs (no restow needed)
+```
+
+See [`palette/README.md`](palette/README.md).
+
 ## Adding a new config
 
 To add a new configuration file, simply create the file in the corresponding package directory and then run `stow` to create the symlink. For example, for `package`:

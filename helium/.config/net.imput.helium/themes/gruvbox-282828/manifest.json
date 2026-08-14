@@ -1,0 +1,116 @@
+{
+  "manifest_version": 3,
+  "name": "gruvbox-282828",
+  "version": "1.0",
+  "theme": {
+    "colors": {
+      "frame": [
+        40,
+        40,
+        40
+      ],
+      "frame_inactive": [
+        40,
+        40,
+        40
+      ],
+      "frame_incognito": [
+        40,
+        40,
+        40
+      ],
+      "frame_incognito_inactive": [
+        40,
+        40,
+        40
+      ],
+      "toolbar": [
+        40,
+        40,
+        40
+      ],
+      "omnibox_background": [
+        40,
+        40,
+        40
+      ],
+      "ntp_background": [
+        40,
+        40,
+        40
+      ],
+      "button_background": [
+        40,
+        40,
+        40
+      ],
+      "tab_text": [
+        235,
+        219,
+        178
+      ],
+      "tab_background_text": [
+        235,
+        219,
+        178
+      ],
+      "bookmark_text": [
+        235,
+        219,
+        178
+      ],
+      "toolbar_text": [
+        235,
+        219,
+        178
+      ],
+      "omnibox_text": [
+        235,
+        219,
+        178
+      ],
+      "ntp_text": [
+        235,
+        219,
+        178
+      ],
+      "ntp_link": [
+        131,
+        165,
+        152
+      ],
+      "ntp_header": [
+        146,
+        131,
+        116
+      ]
+    },
+    "tints": {
+      "buttons": [
+        -1,
+        -1,
+        -1
+      ],
+      "frame_inactive": [
+        -1,
+        -1,
+        -1
+      ],
+      "frame_incognito": [
+        -1,
+        -1,
+        -1
+      ],
+      "frame_incognito_inactive": [
+        -1,
+        -1,
+        -1
+      ],
+      "background_tab": [
+        -1,
+        -1,
+        -1
+      ]
+    }
+  }
+}
