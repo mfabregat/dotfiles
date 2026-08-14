@@ -99,8 +99,8 @@ bindsym $mod+r mode "resize"
 #
 # Utilities:
 #
-# Lock the screen
-bindsym $mod+P exec swaylock
+# Lock the screen (quickshell lock — ext-session-lock + PAM)
+bindsym $mod+P exec quickshell ipc call lock lock
 
 # Special keys to adjust volume via PipeWire (wpctl)
 bindsym --locked XF86AudioMute exec wpctl set-mute @DEFAULT_AUDIO_SINK@ toggle

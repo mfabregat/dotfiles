@@ -17,8 +17,10 @@ shikane
 ## Quickshell shell (right bar · launcher · notifications · OSD · polkit)
 
 ```bash
-sudo pacman -S quickshell pipewire brightnessctl polkit networkmanager upower wl-clipboard grim
+sudo pacman -S quickshell pipewire brightnessctl polkit networkmanager upower swayidle wl-clipboard grim
 ```
+
+- `swayidle` (idle → lock → DPMS off; autostarted by the sway config).
 
 - `quickshell` is pre-1.0: **pin 0.3.0** (Arch `extra/quickshell`); do not
   upgrade blindly — configs live in git (see PLAN-quickshell.md).

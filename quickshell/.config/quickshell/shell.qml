@@ -6,10 +6,15 @@
 import Quickshell
 import QtQuick
 import qs.bar
+import qs.lock
 import qs.popups
 
 ShellRoot {
     RightBar {}
+
+    // Lock screen (ext-session-lock + PAM). Stays unlocked until asked:
+    // $mod+P / swayidle timeout / power menu (quickshell ipc call lock lock).
+    Lock {}
 
     // Launcher: one fullscreen window per screen; only the focused
     // monitor's instance is visible (see popups/Launcher.qml).

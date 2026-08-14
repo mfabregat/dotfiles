@@ -614,6 +614,88 @@ undefined-property issue above) caused an automatic hot reload that
 re-registered the polkit agent mid-test — don't edit files while a polkit
 conversation is on screen.
 
+## Phase 6 log (2026-08-14, done)
+
+Lock screen + swayidle live (replaces swaylock; the PowerMenu Lock row and
+`$mod+P` now work — the IPC target exists). No system PAM edits needed.
+
+- `services/Wallpaper.qml` (new singleton): one-time startup probe for the
+  sway wallpaper (`~/.config/sway/wallpaper.{jpg,png}`, first readable
+  wins), exposes `path`/`url` for the lock blur. Lock.qml touches it at
+  startup so the probe isn't deferred to the first lock (lazy singleton
+  instantiation would otherwise delay the first lock's background by one
+  probe round-trip).
+- `lock/Pam.qml` (new): PamContext with the bundled service `passwd` under
+  `lock/assets/pam.d` (`auth required pam_unix.so` — password only, no
+  fingerprint, and deliberately NO pam_faillock: a wrong password on the
+  lock screen can never trip deny=3 / lock the account; swaylock's
+  system-auth chain has that hazard). Shared state (`currentText` /
+  `unlockInProgress` / `showFailure`) lives here so every per-screen
+  surface mirrors the same buffer. Buffer cleared on completion, not on
+  respond (official-example behavior — a follow-up prompt keeps the text).
+- `lock/Lock.qml` (new): WlSessionLock (locked stays false at startup —
+  only IPC/idle/power-menu engages it) + per-screen WlSessionLockSurface
+  delegate + IpcHandler `target: "lock"` with `lock()`/`unlock()`/
+  `isLocked()`. PAM success → locked=false + one `swaymsg output "*" dpms
+  on` (covers IPC unlocks; typing already fires swayidle resume).
+- `lock/LockSurface.qml` (new): full-screen per monitor — blurred wallpaper
+  (Image in a `layer.enabled` Item + MultiEffect blur `0.4/40`) + gruvbox
+  dark0 overlay, centered lock glyph / HH:MM clock (SystemClock) / date /
+  password field (shared-buffer binding, Enter submits, Esc cancels+
+  clears, failure shows in urgent red, refocus re-armed on re-enable).
+- `shell.qml`: `Lock {}` added (import qs.lock).
+- sway: `bindsym $mod+P` now `quickshell ipc call lock lock` (swaylock
+  dropped); autostart gains `exec swayidle -w timeout 300 'quickshell ipc
+  call lock lock' timeout 330 'swaymsg output "*" dpms off' resume
+  'swaymsg output "*" dpms on'` (plain `exec`, not exec_always — a sway
+  reload must not spawn a second swayidle; multi-line backslash
+  continuation verified in sway 1.12 source: getline_with_cont).
+- install.md: swayidle added to the quickshell deps.
+
+Verified live: clean loads; `ipc show` lists the handler; lock →
+`[lock] state: locked` + `[lock] compositor secure: true` (compositor
+confirmed all screens covered) → unlock → secure false; wallpaper probe
+logs `path: /home/marc/.config/sway/wallpaper.jpg`; swayidle parses the
+args and runs in-session (started via `swaymsg exec` — the autostart line
+only fires at next login). **User-confirmed visually + interactively**: the
+full password flow — lock, type password, `Authenticated successfully.`
+(session log), unlock — plus the blurred wallpaper background and clock.
+
+Landmines found and worked around (this phase):
+
+22. **`root.<id>` never resolves — ids are not properties.** `root.pwInput`
+    (id access through the file-root object) is `undefined` in handlers;
+    only bare ids resolve (verified with throwaway configs: root handler,
+    sibling handler, own handler — all fail on `root.<id>`, all pass on
+    bare `<id>`). Declared properties (`root.pam` where pam is a declared
+    property) work fine. Fixed in LockSurface (pwInput accesses) and
+    Pam.qml (pamContext accesses); the codebase's bare-id convention
+    (searchInput/pwInput/resultsList) is the rule going forward.
+23. **Outer id colliding with a delegate's `required property` resolves to
+    the instance's own unset property inside a Component.** Lock.qml's
+    `Pam { id: pam }` + `LockSurface { pam: pam }` → binding loop on
+    `pam` + null everywhere (the surface delegate is a Component; the
+    same-named initializer binds to the not-yet-assigned required
+    property instead of the outer id). Distinct names (id `auth`, property
+    `pam`) fix it — same shadowing family as landmine 14.
+24. **`WlSessionLock.setLocked(true)` never emits lockStateChanged** — the
+    manager only emits it on unlock; the compositor confirmation is the
+    separate `locked`/secure signal. Logging on the target-state property
+    (`onLockedChanged`) gives symmetric lock/unlock lines.
+25. **Directory-imported `pragma Singleton` files don't behave like module
+    singletons in throwaway configs** (`import "svc.qml" as S` — never
+    instantiated, onCompleted never fires). In the real `qs.services`
+    module singletons DO instantiate and run onCompleted (CpuMemTemp's
+    1 Hz poll proves it). Only affects /tmp repros, not the shell.
+
+Notes: restarting quickshell while the session is locked leaves the
+compositor's lock in place (ext-session-lock security — no sway IPC can
+release it; the session stays locked until TTY login). Don't do it. The
+`--locked` media keys were already present in the sway config; their
+behavior under the quickshell lock needs the user's confirm (next
+interactive session) — sway handles them independently of the lock
+surface.
+
 ### Phase 5 review pass (2026-08-13)
 
 - **Brightness: ad-hoc 500ms poll → native FileView watch.** The plan's

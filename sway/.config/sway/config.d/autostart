@@ -3,6 +3,15 @@ exec_always sh -c 'pkill -x waybar 2>/dev/null; pkill -x quickshell 2>/dev/null;
 exec_always autotiling
 exec_always sh -c 'pkill -x gammastep 2>/dev/null; exec gammastep-indicator'
 
+# Idle: lock after 5 min (quickshell lock), DPMS off 30 s later; any input
+# or an unlock turns DPMS back on. `exec` (not exec_always) so a sway
+# reload doesn't spawn a second swayidle. quickshell ipc needs no env here:
+# swayidle is exec'd by sway, same environment as the $menu/$notifications binds.
+exec swayidle -w \
+	timeout 300 'quickshell ipc call lock lock' \
+	timeout 330 'swaymsg output "*" dpms off' \
+	resume 'swaymsg output "*" dpms on'
+
 # # Export Sway environment to systemd & D-Bus
 
 # exec systemctl --user import-environment DISPLAY WAYLAND_DISPLAY SWAYSOCK XDG_CURRENT_DESKTOP
