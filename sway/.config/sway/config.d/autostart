@@ -1,5 +1,5 @@
 
-exec_always sh -c 'pkill -x waybar 2>/dev/null; pkill -x quickshell 2>/dev/null; sleep 0.2; exec quickshell'
+exec_always sh -c 'pkill -x quickshell 2>/dev/null; sleep 0.2; exec quickshell'
 exec_always autotiling
 # Night light: gammastep-indicator tray app (the established gammastep
 # integration — daemon + SIGUSR1 toggle + config values). A quickshell

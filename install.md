@@ -23,8 +23,22 @@ sudo pacman -S quickshell pipewire brightnessctl polkit networkmanager upower sw
 
 - `swayidle` (idle → lock → DPMS off; autostarted by the sway config).
 
-- `quickshell` is pre-1.0: **pin 0.3.0** (Arch `extra/quickshell`); do not
-  upgrade blindly — configs live in git (see PLAN-quickshell.md).
+- `quickshell` is pre-1.0: **pin 0.3.0** (Arch `extra/quickshell`;
+  installed: 0.3.0-2). Do not upgrade blindly — breaking changes on
+  upgrades; configs live in git (see PLAN-quickshell.md). To keep pacman
+  from pulling a newer version, add to `/etc/pacman.conf`:
+
+  ```ini
+  IgnorePkg = quickshell
+  ```
+
+  (the plan was written against 0.3.0; revisit the pin only after
+  reading PLAN-quickshell.md for the verified API facts).
+- Replaces the retired waybar (+ waybar_top) / swaylock / rofi /
+  swaynag-exit-confirm setup: the right bar, launcher, lock screen, and
+  power/exit flows all live in quickshell now. Their configs were
+  removed from this repo (phase 8); if the binaries are still installed
+  they are unused and can go with `sudo pacman -Rns waybar swaylock rofi`.
 - `pipewire` provides wpctl (media/brightness keybindings); `brightnessctl`
   is only needed for brightness *writes* (reads are native sysfs).
 - `networkmanager` (network state), `upower` (battery), `polkit` (auth
@@ -41,6 +55,10 @@ sudo pacman -S quickshell pipewire brightnessctl polkit networkmanager upower sw
 
 ## Removed
 foot
+
+waybar, waybar_top, swaylock, rofi — replaced by the quickshell shell
+(phase 8, 2026-08-14). Configs dropped from the repo + unstowed; the
+binaries may still be installed (see the quickshell section above).
 
 
 ## Extra

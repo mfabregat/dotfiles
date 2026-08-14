@@ -12,8 +12,8 @@ authoritative reference is `man 5 sway`.
      imports `DISPLAY`/`WAYLAND_DISPLAY`/`SWAYSOCK`/`XDG_CURRENT_DESKTOP`
      into the systemd user session.
   2. `variables` — shared defaults (`$mod`, `$term`, `$scripts`, ...).
-  3. `config.d/*` — feature files (alphabetical: bar, input,
-     keybindings, looks, navigation, output).
+  3. `config.d/*` — feature files (alphabetical: 0variables, autostart,
+     input, keybindings, looks, navigation, output).
 - There are NO per-machine files: the config is machine-agnostic. Output
   geometry lives in shikane (see Dynamic outputs below), and the desk
   scripts derive their output mapping from monitor positions at runtime
@@ -200,18 +200,16 @@ authoritative reference is `man 5 sway`.
   pixel 2`, `gaps inner 4`, `hide_edge_borders smart`.
 - `floating_modifier $mod normal` — drag with $mod+LMB, resize with
   $mod+RMB (works for tiled windows too).
-- Bar: waybar (not swaybar), started via `exec_always sh -c 'pkill -x
-  waybar; ~/.config/waybar/audio_menu.sh; exec waybar'`. sway re-runs
-  exec_always on reload WITHOUT stopping the old instance, so the pkill is
-  what prevents duplicate bars. audio_menu.sh regenerates the audio widget's
-  right-click device menu (menu XML is only read by waybar at startup);
-  reload sway to pick up newly connected devices. Runtime files live in
-  `~/.cache/waybar/` (NOT in the repo, which is stow-symlinked):
-  `audio_menu.xml` (GtkMenu) and `audio_sinks.map` (slot -> PipeWire node
-  id). `menu-actions` slots in config.jsonc are static (`sink1..sink8`);
-  `~/.config/waybar/audio_select.sh <slot>` resolves the slot via the map and
-  runs `wpctl set-default` (the bar's volume display updates live via the
-  wireplumber module; no waybar reload is needed).
+- Bar + DE pieces: quickshell (stow package `quickshell/`, one process,
+  gruvbox theme), started from `config.d/autostart` via
+  `exec_always sh -c 'pkill -x quickshell 2>/dev/null; sleep 0.2; exec
+  quickshell'` — the pkill prevents duplicate shells on reload. It provides
+  the right bar (workspaces/taskbar/tray/volume/...), launcher (`$mod+d`),
+  notifications (daemon + popup + center), OSD, polkit agent, lock screen
+  (`$mod+P` / swayidle), clipboard, network menu, screenshot picker (grim)
+  — all driven through `quickshell ipc call …` (see PLAN-quickshell.md in
+  the repo root). No swaybar/waybar/rofi/swaylock configs live in this repo
+  anymore (removed 2026-08-14, phase 8).
 - `focus_follows_mouse no` + `focus_wrapping` control pointer/keyboard
   focus behavior across outputs.
 
