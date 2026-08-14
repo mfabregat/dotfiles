@@ -21,7 +21,14 @@ bindsym $mod+shift+b exec $browser --incognito
 
 bindsym $mod+s exec spotify
 
-bindsym Print exec grimshot --notify savecopy anything
+# Screenshots: Print = area picker, Shift+Print = fullscreen (grim via
+# the quickshell Screenshot service — replaces the old grimshot bind).
+bindsym Print exec $screenshot
+bindsym Shift+Print exec quickshell ipc call screenshot full
+
+# Control center / clipboard history (quickshell IPC)
+bindsym $mod+Shift+c exec $controlcenter
+bindsym $mod+Shift+v exec $clipboard
 
 # Drag floating windows by holding down $mod and left mouse button.
 # Resize them with right mouse button + $mod.

@@ -19,6 +19,15 @@ set $menu quickshell ipc call launcher toggle
 # Notification center (quickshell IPC); bell in the bar also toggles it.
 set $notifications quickshell ipc call notifications toggle
 
+# Control center (quickshell IPC); opens from the $mod+Shift+c bind.
+set $controlcenter quickshell ipc call controlcenter toggle
+
+# Clipboard history (quickshell IPC); needs wl-clipboard (install.md).
+set $clipboard quickshell ipc call clipboard toggle
+
+# Screenshot area picker (quickshell IPC); replaces grimshot.
+set $screenshot quickshell ipc call screenshot pick
+
 set $browser helium-browser
 set $editor code
 

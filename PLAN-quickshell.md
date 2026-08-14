@@ -696,6 +696,144 @@ behavior under the quickshell lock needs the user's confirm (next
 interactive session) — sway handles them independently of the lock
 surface.
 
+## Phase 7 log (2026-08-14, done)
+
+Extras live: control center, clipboard history, network menu, night light,
+screenshot picker. grimshot keybind replaced. gammastep-indicator retired
+(the sway autostart line is gone; the NightLight service owns gammastep).
+
+- `services/ControlCenter.qml` (new): open state + IpcHandler
+  `controlcenter` (toggle/open/close).
+- `services/Clipboard.qml` (new): history ring (cap 20) watched via
+  `wl-paste --watch` + a `cat; printf '\036'` command (ASCII RS delimiter,
+  SplitParser splitMarker — verified with a stub that one clipboard change
+  == exactly one chunk, multi-line intact). Availability probed once
+  (`command -v wl-paste && command -v wl-copy`); without wl-clipboard the
+  ring is inert and the popup shows a hint. Copies go through argument-
+  based `wl-copy` (no shell, no injection); the watch echo is deduped.
+  IpcHandler `clipboard` (toggle/clear/count).
+- `services/NightLight.qml` (new): gammastep wrapper. Apply model verified
+  against gammastep 2.0.11 (`-p` print mode): enabled → `gammastep -O <K>
+  -P -b <day>:<night>` (one-shot, exits immediately — no daemon), disabled
+  → `gammastep -x`. State (enabled/temperature/day/night brightness)
+  persists to `~/.local/state/quickshell-nightlight` (JSON; $HOME via
+  `Quickshell.env()` — verified 2026-08-14; written on change, read once
+  at startup). IpcHandler `nightlight` (toggle/on/off). The control center
+  hosts toggle + temperature (1000–6500K) + day/night brightness sliders
+  (gammastep -b DAY:NIGHT).
+- `services/WifiState.qml` (new): native NetworkManager wrapper — no nmcli.
+  `wifiDevice` (first DeviceType.Wifi), networks (tracked .values),
+  wifiEnabled (rfkill, writable), sortedNetworks (connected first, then
+  signal), connect/disconnect via `Network.connect()` / `connectWithPsk()`
+  / `disconnect()` (known → connect(); open/OWE → connectWithPsk(""); other
+  secured → inline PSK row), connectionFailed wiring (NoSecrets re-opens
+  the PSK row), scanner refcount (scan only while a network UI is visible
+  — `useScanner(true/false)` on popup show/hide).
+- `services/Screenshot.qml` (new): grim backend (the plan deliberately
+  avoids ScreencopyView). `capture(geometry)` hides the picker first —
+  **grim composites layer-shell surfaces, so the overlay would appear in
+  the shot otherwise** — spawns `sh -c 'mkdir -p …; grim -g "$1" - > file
+  && wl-copy-if-present && echo "$file"'`, notifies through our own daemon
+  (gdbus, image-path hint for the thumbnail). IpcHandler `screenshot`
+  (pick/full/toggle).
+- `popups/ControlCenter.qml` (new): fullscreen PanelWindow per screen
+  (focused monitor only, launcher pattern). Right-edge card next to the
+  bar, Flickable-scrollable: volume (Pipewire write, mute switch),
+  brightness (brightnessctl write, debounced 120ms), night light (toggle +
+  temp + day/night brightness sliders), network (shared NetworkSection),
+  power (shared PowerSection). Esc/backdrop close; wifi scanner active
+  while open.
+- `popups/NetworkMenu.qml` (new): bar-anchored quick menu (network widget
+  click) with the shared NetworkSection; scanner refcount on show/hide.
+- `popups/NetworkSection.qml` (new, shared): wifi toggle + rescan + up to
+  8 AP rows (signal icon, lock, ssid, check/spinner) + inline PSK row +
+  error line + ethernet rows. Inline delegates binding `net` by index
+  (landmines 9/14 — no `required property var modelData`).
+- `popups/ClipboardPopup.qml` (new): launcher-style fullscreen popup
+  (focused monitor only): search + history list, click copies + closes, ✕
+  removes one, clear-all, Esc/backdrop close, empty states (incl. the
+  wl-clipboard hint).
+- `popups/ScreenshotPicker.qml` (new): fullscreen overlay per screen, ALL
+  instances visible while open (drag on any screen). Dim + selection
+  border (4 rects, no masks), size label, hint pill. Drag → area capture;
+  click → fullscreen of that screen; Esc cancels. Only the focused
+  monitor's instance grabs the keyboard.
+- `popups/ToggleSwitch.qml`, `popups/ControlSlider.qml` (new, shared):
+  gruvbox pill switch + slider (drag-safe: handle follows the mouse while
+  pressed, binding takes over on release).
+- `popups/PowerSection.qml` (new): power actions extracted from PowerMenu
+  (lock/logout/suspend/reboot/shutdown, two-step confirm) — now shared by
+  the power popup and the control center (`actionTriggered` signal lets
+  embedders close themselves). PowerMenu is a thin AnchoredPopup wrapper.
+- `bar/NetworkWidget.qml`: click opens the NetworkMenu popup (was
+  display-only).
+- sway: Print → `$screenshot` (area picker), Shift+Print → fullscreen,
+  `$mod+Shift+c` → control center, `$mod+Shift+v` → clipboard (new $vars in
+  0variables); grimshot bind and the gammastep-indicator autostart line
+  removed. install.md: + gammastep dep note, wl-clipboard now required for
+  the clipboard manager (installed this session).
+
+Verified live (fresh restart via `swaymsg reload`, 0 errors):
+- `ipc show` lists all 7 handlers (controlcenter/clipboard/nightlight/
+  screenshot + lock/launcher/notifications).
+- Clipboard ring: copies captured (log), dupes deduped (count stable),
+  multi-line kept as one entry, `count` IPC works; wl-paste --watch runs
+  as a long-lived child.
+- Popups open/close cleanly and grab/restore keyboard (swaymsg get_tree:
+  no focused node while open = layer surface has the seat; focus returns
+  to the toplevel on close — same check as phase 3).
+- Fullscreen screenshot: valid 1920×1080 PNG saved to
+  ~/Pictures/Screenshots and a daemon notification fired
+  (`[notifications] qs-screenshot: Screenshot taken`). One early capture
+  produced an empty file — that ran mid-hot-reload (the process was
+  spawned during reload teardown); clean restarts are reliable.
+- Night light: on/off round-trip writes the state file
+  (`{"enabled":…,"temperature":4000,"day":1,"night":0.7}`) and applies
+  gammastep; startup read + apply verified.
+- Network state native module: devices populate async, wifiEnabled
+  tracked, DeviceType.Wifi=1/Wired=2 (no wifi hardware on this desktop —
+  the wifi UI hides; ethernet rows render).
+
+Landmines found and worked around (this phase):
+
+26. **Quickshell.clipboardText cannot watch the clipboard** (verified
+    2026-08-14, two throwaway configs): the notify `clipboardTextChanged`
+    fires ONLY on self-writes (the C++ side never wires QClipboard's
+    dataChanged into `onClipboardChanged` — that virtual is called
+    nowhere in the 0.3.0 source), and cross-instance reads of external
+    offers return empty. Writing works in-process. The plan's wl-paste
+    watch is the only reliable source — the native property is a trap
+    for managers.
+27. **`wl-paste --watch` rejects `--` before the command.** getopt treats
+    `--` as `--watch`'s required argument and errors ("Expected a
+    subcommand instead of an argument after --watch"). The command must
+    follow `--watch` directly: `wl-paste --type text/plain --watch sh -c
+    'cat; printf "\036"'` (verified against wl-clipboard 2.3.0 source +
+    binary). The RS delimiter survives SplitParser's chunking.
+28. **Process `running: <binding>` does start processes on the binding
+    flip — but only after load** (root-caused in the 0.3.0 source):
+    `startProcessIfReady` early-returns while `isPostReload` is false,
+    so a `running: true` binding set during config load is deferred to
+    the post-reload hook. Fine for watchers whose `running` flips after
+    load (our availability-probe pattern); don't rely on a load-time
+    `running: true` binding to start something synchronously.
+29. **Process `onExited` fires for watch-mode subprocess deaths too** —
+    `wl-paste --watch` exits 1 on bad args (landmine 27), which the
+    watcher's parent process reports; the first version of the watcher
+    silently died until the args were fixed. Check `pgrep -af wl-paste`
+    (or the exit code) after changing watch commands.
+
+Notes: the old gammastep-indicator tray app + its gammastep daemon were
+still running this session — killed (`pkill -f gammastep-indicator;
+pkill -x gammastep; gammastep -x`) before testing night light; gone on
+next login via the removed autostart line. The screenshot picker's click-
+for-fullscreen also covers the non-focused screen (per-screen windows,
+screen-relative coords — grim -g is output-layout global, verified
+byte-identical to `grim -o`). Control center wifi section and NetworkMenu
+are untestable live here (no wifi hardware); the native API paths were
+verified against the docs + qmltypes, and the UI hides gracefully
+(machine-agnostic per the plan).
+
 ### Phase 6 review pass (2026-08-14)
 
 Read the pam conversation source (0.3.0) and re-audited every assumption:

@@ -11,13 +11,14 @@ base-devel
 flatpak
 autotiling
 shikane
+wl-clipboard gammastep grim
 
 
 
-## Quickshell shell (right bar · launcher · notifications · OSD · polkit)
+## Quickshell shell (right bar · launcher · notifications · OSD · polkit · lock · extras)
 
 ```bash
-sudo pacman -S quickshell pipewire brightnessctl polkit networkmanager upower swayidle wl-clipboard grim
+sudo pacman -S quickshell pipewire brightnessctl polkit networkmanager upower swayidle wl-clipboard grim gammastep
 ```
 
 - `swayidle` (idle → lock → DPMS off; autostarted by the sway config).
@@ -26,8 +27,11 @@ sudo pacman -S quickshell pipewire brightnessctl polkit networkmanager upower sw
   upgrade blindly — configs live in git (see PLAN-quickshell.md).
 - `pipewire` provides wpctl (media/brightness keybindings); `brightnessctl`
   is only needed for brightness *writes* (reads are native sysfs).
-- `networkmanager` (bar network state), `upower` (battery), `polkit` (auth
-  agent), `wl-clipboard` (phase-7 clipboard manager), `grim` (screenshots).
+- `networkmanager` (network state), `upower` (battery), `polkit` (auth
+  agent), `wl-clipboard` (phase-7 clipboard manager — wl-paste watch +
+  wl-copy; without it the clipboard popup shows an unavailable hint),
+  `grim` (screenshots), `gammastep` (phase-7 night light in the control
+  center; the old gammastep-indicator tray app is gone).
 - Sway ≥ 1.8 required (ext-session-lock for the phase-6 lock screen).
 
 

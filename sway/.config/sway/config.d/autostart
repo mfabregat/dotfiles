@@ -1,7 +1,8 @@
 
 exec_always sh -c 'pkill -x waybar 2>/dev/null; pkill -x quickshell 2>/dev/null; sleep 0.2; exec quickshell'
 exec_always autotiling
-exec_always sh -c 'pkill -x gammastep 2>/dev/null; exec gammastep-indicator'
+# gammastep-indicator removed (phase 7): the quickshell NightLight service
+# (control center toggle + sliders) owns gammastep now.
 
 # Idle: lock after 5 min (quickshell lock), DPMS off 30 s later; any input
 # or an unlock turns DPMS back on. `exec` (not exec_always) so a sway

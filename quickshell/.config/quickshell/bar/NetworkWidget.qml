@@ -1,5 +1,5 @@
 // bar/NetworkWidget.qml — active network (NetworkManager via Quickshell).
-// v1: display only; the full network menu arrives with the control center.
+// Click opens the network menu popup (phase 7).
 import Quickshell
 import Quickshell.Networking
 import QtQuick
@@ -9,6 +9,8 @@ import qs.popups
 
 Rectangle {
     id: root
+
+    required property var networkMenu
 
     readonly property var wifi: findWifi(Networking.devices.values)
     readonly property var activeNet: findActive(Networking.devices.values, wifi ? wifi.networks.values : [])
@@ -74,6 +76,6 @@ Rectangle {
         id: area
         anchors.fill: parent
         hoverEnabled: true
-        onPressed: PopupManager.hideOpen()
+        onClicked: root.networkMenu.showAt(root)
     }
 }

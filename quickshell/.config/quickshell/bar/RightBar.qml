@@ -50,6 +50,11 @@ Scope {
                 anchorWindow: barWindow
             }
 
+            NetworkMenu {
+                id: networkMenu
+                anchorWindow: barWindow
+            }
+
             // Dismiss any open popup when pressing empty bar space (the
             // widgets' own MouseAreas dismiss on their presses too).
             MouseArea {
@@ -101,7 +106,9 @@ Scope {
 
                         BacklightWidget {}
 
-                        NetworkWidget {}
+                        NetworkWidget {
+                            networkMenu: networkMenu
+                        }
 
                         TrayWidget {
                             barWindow: barWindow
