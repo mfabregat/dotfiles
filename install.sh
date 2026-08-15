@@ -4,6 +4,8 @@ sudo dnf install akmod-nvidia
 localectl set-locale LANG=es_ES.UTF-8 LC_MESSAGES=en_US.UTF-8
 
 sudo dnf install sway git stow firefox gammastep gnome-keyring python3-pip wget flatpak
+git config --global user.name "Marc Fabregat"
+git config --global user.email marcfj98@gmail.com
 git clone https://github.com/mfabregat/dotfiles
 cd dotfiles
 stow sway ghostty quickshell gammastep
