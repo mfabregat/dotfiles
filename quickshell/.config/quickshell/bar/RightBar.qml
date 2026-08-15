@@ -1,6 +1,7 @@
 // bar/RightBar.qml — the shell's right-edge bar, one instance per screen.
 // Phase 2: workspaces, taskbar, mpris, cpu/mem/temp, volume, backlight,
-// network, layout, tray, battery, clock, power + calendar/audio/power popups.
+// night light, network, layout, tray, battery, clock, power +
+// calendar/audio/power popups.
 import Quickshell
 import QtQuick
 import QtQuick.Layouts
@@ -60,6 +61,11 @@ Scope {
                 anchorWindow: barWindow
             }
 
+            NightLightPopup {
+                id: nightLightPopup
+                anchorWindow: barWindow
+            }
+
             // Dismiss any open popup when pressing empty bar space (the
             // widgets' own MouseAreas dismiss on their presses too).
             MouseArea {
@@ -115,6 +121,10 @@ Scope {
 
                         NetworkWidget {
                             networkMenu: networkMenu
+                        }
+
+                        NightLightWidget {
+                            nightLightPopup: nightLightPopup
                         }
 
                         TrayWidget {

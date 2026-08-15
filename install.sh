@@ -1,113 +1,44 @@
-sudo apt update && sudo apt upgrade
+sudo dnf install https://mirrors.rpmfusion.org/free/fedora/rpmfusion-free-release-$(rpm -E %fedora).noarch.rpm https://mirrors.rpmfusion.org/nonfree/fedora/rpmfusion-nonfree-release-$(rpm -E %fedora).noarch.rpm
+sudo dnf install akmod-nvidia
 
-# Remove unattended-upgrades
-sudo apt remove unattended-upgrades
+localectl set-locale LANG=es_ES.UTF-8 LC_MESSAGES=en_US.UTF-8
 
+sudo dnf install sway git stow firefox gammastep gnome-keyring python3-pip wget flatpak
+git clone https://github.com/mfabregat/dotfiles
+cd dotfiles
+stow sway ghostty quickshell gammastep
 
-### Browsers
-# Remove snap firefox and install apt version
-sudo snap remove firefox
-sudo add-apt-repository ppa:mozillateam/ppa
-echo '
-Package: *
-Pin: release o=LP-PPA-mozillateam
-Pin-Priority: 1001
-' | sudo tee /etc/apt/preferences.d/mozilla-firefox
-sudo apt install firefox
+python -m pip install --user autotiling
 
-# Install Brave
-sudo apt install curl
-curl -fsS https://dl.brave.com/install.sh | sh
+sudo dnf copr enable errornointernet/quickshell
+sudo dnf install quickshell
 
+sudo dnf copr enable scottames/ghostty
+sudo dnf install ghostty
 
-# Clone dotfiles
-sudo apt install git stow
-git config --global user.name "Marc Fabregat"
-git config --global user.email "marcfj98@gmail.com"
-ssh-keygen -t ed25519 -C "marcfj98@gmail.com"
-cat ~/.ssh/id_ed25519.pub
-# Add it to GitHub
-git clone git@github.com:mfabregat/dotfiles.git ~/dotfiles
-cd ~/dotfiles
+stow code
+sudo tee -a /etc/yum.repos.d/vscodium.repo << 'EOF'
+[gitlab.com_paulcarroty_vscodium_repo]
+name=gitlab.com_paulcarroty_vscodium_repo
+baseurl=https://paulcarroty.gitlab.io/vscodium-deb-rpm-repo/rpms/
+enabled=1
+gpgcheck=1
+repo_gpgcheck=1
+gpgkey=https://gitlab.com/paulcarroty/vscodium-deb-rpm-repo/raw/master/pub.gpg
+metadata_expire=1h
+EOF
+sudo dnf install codium
 
-# Apply Ubuntu and GNOME configs
-./gnome.sh load
+stow helium
+sudo dnf copr enable imput/helium
+sudo dnf install helium-bin
+# Extensions -> Developer mode -> Load unpacked -> ~/.config/net.imput.helium/themes/guvbox-282828
 
-# Download apt version of code https://code.visualstudio.com/docs/setup/linux
-sudo apt install ~/Downloads/code*.deb
+gsettings set org.gnome.desktop.interface color-scheme 'prefer-dark'
 
-# Install docker
-wget -q -O - https://get.docker.com | sudo bash
-sudo usermod -aG docker $USER
-# To activate in current session
-newgrp docker
+sudo dnf install nodejs npm
+curl -fsSL https://pi.dev/install.sh | sh
 
-# Check if NVIDIA drivers have been automatically installed
-nvidia-smi
-# If not
-sudo ubuntu-drivers install
-
-# Install Ghostty
-/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/mkasberg/ghostty-ubuntu/HEAD/install.sh)"
-stow ghostty
-
-
-
-### Entertainment
-# Spotify
-curl -sS https://download.spotify.com/debian/pubkey_5384CE82BA52C83A.asc | sudo gpg --dearmor --yes -o /etc/apt/trusted.gpg.d/spotify.gpg
-echo "deb https://repository.spotify.com stable non-free" | sudo tee /etc/apt/sources.list.d/spotify.list
-sudo apt-get update && sudo apt-get install spotify-client
-# Spicetify
-curl -fsSL https://raw.githubusercontent.com/spicetify/cli/main/install.sh | sh
-sudo chmod a+wr /usr/share/spotify && sudo chmod a+wr /usr/share/spotify/Apps -R
-# bash && spicetify backup apply
-# curl -fsSL https://raw.githubusercontent.com/spicetify/marketplace/main/resources/install.sh | sh
-cd ~/dotfiles
-stow spicetify
-spicetify config current_theme text && spicetify config color_scheme Gruvbox && spicetify backup apply
-
-
-# Steam
-# Download from https://store.steampowered.com/about/download
-sudo apt install ~/Downloads/steam*.deb
-
-# Discord (testing Vesktop)
-sudo apt install flatpak
-flatpak remote-add --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo
-# or manually download the .deb from https://vesktop.dev/install/linux/
-sudo apt install ~/Downloads/vesktop*.deb
-
-# Faugus
-sudo dpkg --add-architecture i386
-sudo add-apt-repository -y ppa:faugus/faugus-launcher
-sudo apt update
-sudo apt install -y faugus-launcher
-
-# Stremio
-flatpak install flathub com.stremio.Stremio
-
-
-## Themes
-# https://github.com/Fausto-Korpsvart/Gruvbox-GTK-Theme/tree/master
-sudo apt install gnome-tweaks
-sudo apt install gtk2-engines-murrine
-# Move downloaded folder (the one with gtk-4.0) to ~/.themes
-cd ~/dotfiles
-stow gruvbox_gtk
-# Then open gnome-tweaks and select the theme
-# Finally copy only assets, gtk.css and gtk-dark.css to ~/.config/gtk-4.0
-ln -s ~/.themes/Gruvbox-BL-MB-Dark ~/.local/share/themes/Gruvbox-BL-MB-Dark # is this necessary?
-
-
-# Sway
-sudo apt install sway waybar swaylock playerctl grimshot jq
-# May have to edit the gdm3 wayland_sessions to add nvidia compatibility
-cd ~/dotfiles
-stow sway
-
-
-## Fonts: Noto for system/reading and JetBrainsMono for terminal/editor
 mkdir -p ~/.local/share/fonts
 cd /tmp
 curl -OL https://github.com/ryanoasis/nerd-fonts/releases/latest/download/JetBrainsMono.tar.xz
@@ -117,3 +48,20 @@ curl -OL https://github.com/ryanoasis/nerd-fonts/releases/latest/download/Noto.t
 tar -xf Noto.tar.xz
 mv Noto* ~/.local/share/fonts
 fc-cache -fv
+
+sudo nano /etc/pam.d/login
+# Add as the last entry of auth/session:
+# auth       optional     pam_gnome_keyring.so
+# session    optional     pam_gnome_keyring.so auto_start
+
+wget -q -O - https://get.docker.com | sudo bash
+sudo usermod -aG docker $USER
+
+sudo flatpak remote-add --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo
+flatpak install flathub com.spotify.Client
+
+lsblk -f
+sudo mkdir -p /mnt/{games,data}
+sudo nano /etc/fstab
+systemctl daemon-reload
+sudo mount -a

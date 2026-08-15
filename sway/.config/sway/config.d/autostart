@@ -1,14 +1,10 @@
 
 exec_always sh -c 'pkill -x quickshell 2>/dev/null; sleep 0.2; exec quickshell'
 exec_always autotiling
-# Night light: gammastep-indicator tray app (the established gammastep
-# integration — daemon + SIGUSR1 toggle + config values). A quickshell
-# slider UI was tried and removed (2026-08-14): gammastep has no live
-# control channel (no DBus/config-watch/SIGHUP; SIGUSR1 toggles only) and
-# its daemon must stay alive (wlroots resets the gamma LUT on client
-# disconnect), so value changes need restarts that race multi-monitor
-# ownership.
-exec_always sh -c 'pkill -x gammastep 2>/dev/null; exec gammastep-indicator'
+# Night light: the quickshell shell owns the gammastep daemon natively
+# (bar NightLightWidget + popup, services/NightLight.qml — spawns
+# `gammastep -v`, SIGUSR1 toggle, status parsed from its output). The
+# gammastep-indicator tray app is gone; nothing to start here.
 
 # Idle: lock after 5 min (quickshell lock), DPMS off 30 s later; any input
 # or an unlock turns DPMS back on. `exec` (not exec_always) so a sway

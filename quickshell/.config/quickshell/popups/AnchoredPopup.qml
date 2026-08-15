@@ -14,6 +14,11 @@ import QtQuick
 PopupWindow {
     id: root
 
+    // Quickshell windows default to an opaque white backing (Qt::white);
+    // the rounded PopupShell card would show white corners around its
+    // radius otherwise.
+    color: "transparent"
+
     /// The bar window this popup belongs to.
     required property var anchorWindow
 

@@ -1,5 +1,6 @@
 {
     "files.associations": {
-        "**/sway/.config/sway/**": "shellscript"
+        "**/sway/.config/sway/**": "shellscript",
+        "**/helium/.config/net.imput.helium/Default/Preferences": "jsonc"
     },
 }

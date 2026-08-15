@@ -1,5 +1,13 @@
 focus_follows_mouse no
 
+# Keep the pointer put during desk switches: sway's default warp-on-
+# output-change teleports the (auto-hidden) cursor between monitors as
+# the desk chain hops focus across outputs; a mid-chain abort could
+# leave it stranded on the wrong monitor, which reads as "can't click
+# windows on the other monitor". All workspace switching goes through
+# scripts/desk, so warping has no value here.
+mouse_warping none
+
 #
 # Desks (dynamic scheme): workspaces are <desk><letter> (1a..9c...). A
 # keybind switches the whole desk: every connected output shows

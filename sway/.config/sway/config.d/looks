@@ -1,8 +1,7 @@
-default_border pixel 2
+default_border pixel 1
 smart_borders on
-default_floating_border pixel 2
+default_floating_border pixel 1
 
-gaps inner 4
 smart_gaps on
 
 # Hide the cursor after 2s of inactivity

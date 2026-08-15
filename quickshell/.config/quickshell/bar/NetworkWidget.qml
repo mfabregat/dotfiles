@@ -1,9 +1,11 @@
 // bar/NetworkWidget.qml — active network (NetworkManager via Quickshell).
-// Click opens the network menu popup (phase 7).
+// Icon-only: the connection name lives in the popup (phase 7). Wifi is
+// colored by signal strength (red → orange → green); ethernet is green
+// when connected; dimmed when nothing is connected. Click opens the
+// network menu popup.
 import Quickshell
 import Quickshell.Networking
 import QtQuick
-import QtQuick.Layouts
 import qs
 
 Rectangle {
@@ -13,11 +15,21 @@ Rectangle {
 
     readonly property var wifi: findWifi(Networking.devices.values)
     readonly property var activeNet: findActive(Networking.devices.values, wifi ? wifi.networks.values : [])
+    readonly property bool activeIsWifi: root.activeNet !== null
+        && root.activeNet.device && root.activeNet.device.type === DeviceType.Wifi
 
     width: Theme.widgetWidth
     height: 27
     radius: 7
     color: area.containsMouse ? Theme.bgHover : "transparent"
+
+    /// Wifi signal color: red < 40% < orange < 70% < green (signalStrength
+    /// is 0..1). Three steps — more than three hues don't read at 16px.
+    function strengthColor(s: real): color {
+        if (s >= 0.7) return Theme.brightGreen;
+        if (s >= 0.4) return Theme.brightOrange;
+        return Theme.urgent;
+    }
 
     function findWifi(devices: var): var {
         for (let i = 0; i < devices.length; i++) {
@@ -45,30 +57,15 @@ Rectangle {
         return null;
     }
 
-    ColumnLayout {
-        anchors.fill: parent
-        anchors.margins: 2
-        spacing: 0
-
-        Text {
-            Layout.alignment: Qt.AlignHCenter
-            text: root.wifi ? "" : "󰈀"
-            color: root.activeNet ? Theme.fg : Theme.accent
-            font.family: Theme.fontFamily
-            font.pixelSize: Theme.fontSizeGlyphs
-        }
-
-        Text {
-            Layout.alignment: Qt.AlignHCenter
-            Layout.fillWidth: true
-            elide: Text.ElideRight
-            horizontalAlignment: Text.AlignHCenter
-            text: root.activeNet ? root.activeNet.name : ""
-            visible: root.activeNet !== null // no blank line when disconnected
-            color: Theme.fgDim
-            font.family: Theme.fontFamily
-            font.pixelSize: Theme.fontSizeSmall
-        }
+    Text {
+        anchors.centerIn: parent
+        text: root.wifi ? "" : "󰈀"
+        color: !root.activeNet ? Theme.fgDim
+             : root.activeIsWifi ? root.strengthColor(root.activeNet.signalStrength)
+             : Theme.brightGreen
+        font.family: Theme.fontFamily
+        font.pixelSize: Theme.fontSizeGlyphs
+        Behavior on color { ColorAnimation { duration: 150 } }
     }
 
     MouseArea {

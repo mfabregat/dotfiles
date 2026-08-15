@@ -16,6 +16,8 @@ set $term ghostty
 # Toggles the quickshell launcher (drun) over IPC; Esc or click-outside closes.
 set $menu quickshell ipc call launcher toggle
 
+set $spotify flatpak run com.spotify.Client
+
 # Notification center (quickshell IPC); bell in the bar also toggles it.
 set $notifications quickshell ipc call notifications toggle
 
@@ -25,8 +27,8 @@ set $clipboard quickshell ipc call clipboard toggle
 # Screenshot area picker (quickshell IPC); replaces grimshot.
 set $screenshot quickshell ipc call screenshot pick
 
-set $browser helium-browser
-set $editor code
+set $browser helium
+set $editor codium
 
 # Scripts bundled with this config (kept in the config dir for portability)
 set $scripts ~/.config/sway/scripts

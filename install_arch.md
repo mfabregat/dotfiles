@@ -64,10 +64,14 @@ sudo pacman -S quickshell pipewire brightnessctl polkit networkmanager upower sw
 - `networkmanager` (network state), `upower` (battery), `polkit` (auth
   agent), `wl-clipboard` (phase-7 clipboard manager — wl-paste watch +
   wl-copy; without it the clipboard popup shows an unavailable hint),
-  `grim` (screenshots), `gammastep` (night light via the bundled
-  gammastep-indicator tray app — daemon + SIGUSR1 toggle + config values;
-  a quickshell slider UI was tried and removed: gammastep has no live
-  control channel and its daemon must stay alive on wlroots).
+  `grim` (screenshots), `gammastep` (night light via a native
+  quickshell widget + popup — `services/NightLight.qml` owns the daemon:
+  spawns `gammastep -v`, toggles with SIGUSR1, parses status/period/
+  temperature from its output; the same protocol the old
+  gammastep-indicator tray app used, now with no Python/GTK tray app.
+  Temperatures come from the config; gammastep has no live control
+  channel (no DBus/config-watch) and its daemon must stay alive on
+  wlroots, so the popup offers toggle + suspend presets, not sliders).
 - Sway ≥ 1.8 required (ext-session-lock for the phase-6 lock screen).
 
 

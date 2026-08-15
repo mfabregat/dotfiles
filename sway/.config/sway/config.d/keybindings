@@ -19,7 +19,7 @@ bindsym $mod+c exec $editor
 bindsym $mod+b exec $browser
 bindsym $mod+shift+b exec $browser --incognito
 
-bindsym $mod+s exec spotify
+bindsym $mod+s exec $spotify
 
 # Control center removed (2026-08-14): every feature lives in its own
 # bar-anchored popup now (audio, brightness, night light, network, power).

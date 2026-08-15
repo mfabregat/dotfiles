@@ -18,8 +18,27 @@
 # stable). There is no per-machine config: the mapping is derived at
 # runtime. $desks is fixed at 9 (bindings go up to $mod+9).
 #
-# Cost per action: 1 get_outputs query + 1 chained swaymsg command
-# (the focused output is read from the same query).
+# How a switch works (smart/minimal chain):
+#   * get_outputs    → sorted outputs + the focused one (1 IPC call).
+#   * get_workspaces → where each <desk><letter> lives and whether it
+#     is visible (1 IPC call).
+#   * Build a command chain that only touches what is wrong:
+#       - missing / on the wrong output: pin it, switch to it, move it
+#         onto the right output (the pin also makes future creation
+#         land there directly);
+#       - on the right output but not yet shown: switch to it;
+#       - already shown: nothing.
+#   So an already-shown desk costs zero commands, a settled desk costs
+#   one switch per output, and only truly misplaced workspaces get
+#   yanked. The chain is idempotent — a repeat press self-heals.
+#   The user's output is processed last, so focus ends there.
+#
+# Pointer: mouse_warping is disabled in config.d/navigation. The default
+# "warp to focused output" teleports the (auto-hidden) cursor between
+# monitors during a chain, and an aborted chain could leave it stranded
+# on the wrong output — which reads as "can't click windows on the other
+# monitor". All workspace switching goes through this script, so warping
+# has no value here.
 
 OUTPUT_LETTERS="a b c d e f g h i"
 desks=9
@@ -45,22 +64,50 @@ load_desk_map() {
 	focused_out=$(printf '%s' "$outputs" | jq -r '.[] | select(.focused) | .name')
 }
 
-# desk_switch_chain <desk> <last-letter> — print a sway command chain that
-# brings up <desk> on every connected output, ending focus on <last>.
-# Each workspace is pinned for future creation (workspace X output Y) AND
-# actively moved to its output (move workspace to output Y), so misplaced
-# workspaces self-heal whenever a desk is opened.
-desk_switch_chain() {
+# load_ws_map <desk> — sets ws_out_<desk><letter> (output the workspace
+# lives on; unset or "null" if it does not exist) and ws_vis_<desk><letter>
+# (true/false) for the target desk's workspaces. One IPC call.
+load_ws_map() {
+	desk=$1
+	workspaces=$(swaymsg -t get_workspaces -r) || die "swaymsg failed"
+	eval "$(printf '%s' "$workspaces" | jq -r --arg d "$desk" \
+		'.[] | select(.name | length == 2) | select(.name | startswith($d)) | "ws_out_\(.name)=\(.output | @sh) ws_vis_\(.name)=\(.visible)"')"
+}
+
+# desk_segment <desk> <letter> — print the sway commands that bring this
+# output's workspace up on its own output ('' if it already is).
+desk_segment() {
+	desk=$1
+	letter=$2
+	eval "out=\$out_$letter"
+	eval "wsout=\$ws_out_${desk}${letter}"
+	eval "wsvis=\$ws_vis_${desk}${letter}"
+	if [ "$wsout" != "$out" ]; then
+		# missing or on the wrong output: pin, switch, actively move it.
+		# (A missing workspace is created on the pinned output, so the
+		# switch and the move are no-ops then; a misplaced one is yanked.)
+		printf 'workspace %s%s output %s, workspace --no-auto-back-and-forth %s%s, move workspace to output %s' \
+			"$desk" "$letter" "$out" "$desk" "$letter" "$out"
+	elif [ "$wsvis" != "true" ]; then
+		# on the right output but not shown yet: switch to it
+		printf 'workspace --no-auto-back-and-forth %s%s' "$desk" "$letter"
+	fi
+}
+
+# desk_chain <desk> <last-letter> — print the full switch chain, ending
+# focus on <last> (the user's output, processed last).
+desk_chain() {
 	desk=$1
 	last=$2
 	chain=""
 	for letter in $letters; do
 		[ "$letter" = "$last" ] && continue
-		eval "out=\$out_$letter"
-		chain="$chain workspace ${desk}${letter} output $out, focus output $out, workspace --no-auto-back-and-forth ${desk}${letter}, move workspace to output $out,"
+		seg=$(desk_segment "$desk" "$letter")
+		[ -n "$seg" ] && chain="$chain$seg,"
 	done
-	eval "out=\$out_$last"
-	chain="$chain workspace ${desk}${last} output $out, focus output $out, workspace --no-auto-back-and-forth ${desk}${last}, move workspace to output $out"
+	seg=$(desk_segment "$desk" "$last")
+	[ -n "$seg" ] && chain="$chain$seg"
+	chain=${chain%,} # drop trailing comma if the last letter needs nothing
 	printf '%s' "$chain"
 }
 
@@ -83,6 +130,7 @@ go_desk() {
 	esac
 	load_desk_map
 	[ "$desk" -le "$desks" ] || die "desk $desk out of range (max $desks)"
+	load_ws_map "$desk"
 
 	# End focus on the output the user is on (works even from non-scheme
 	# workspaces); fall back to the first letter if it is not in the scheme.
@@ -93,7 +141,9 @@ go_desk() {
 	done
 	[ -n "$last" ] || last=$(printf '%s' "$letters" | cut -c1)
 
-	exec swaymsg --quiet "$(desk_switch_chain "$desk" "$last")"
+	chain=$(desk_chain "$desk" "$last")
+	[ -n "$chain" ] || exit 0 # desk already shown — nothing to do
+	exec swaymsg --quiet "$chain"
 }
 
 move_desk() {
@@ -104,9 +154,16 @@ move_desk() {
 	esac
 	load_desk_map
 	[ "$desk" -le "$desks" ] || die "desk $desk out of range (max $desks)"
-
 	focused_letter
-	exec swaymsg --quiet "move container to workspace ${desk}${letter},$(desk_switch_chain "$desk" "$letter")"
+	load_ws_map "$desk"
+
+	# The container moves to this desk's workspace on the SAME output;
+	# the switch chain then pins/places every output (the chain may have
+	# created the target workspace, so it is not skipped just because it
+	# was missing at query time — it is handled by the "missing" segment).
+	chain=$(desk_chain "$desk" "$letter")
+	[ -n "$chain" ] && chain=",$chain"
+	exec swaymsg --quiet "move container to workspace ${desk}${letter}${chain}"
 }
 
 start() {

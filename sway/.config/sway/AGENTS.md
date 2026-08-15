@@ -129,7 +129,9 @@ authoritative reference is `man 5 sway`.
   from output positions at runtime — no per-machine config needed.
 - There is NO hotplug re-apply daemon anymore (shikane + `restore_desk`
   are gone): after a dock/undock, sway re-applies the output blocks and
-  the next `desk go`/`desk move` press re-pins every workspace.
+  the next `desk go`/`desk move` press re-pins/re-places every workspace
+  (the desk chain only acts on workspaces that are missing, misplaced,
+  or not visible — see the script header).
 - Each output shows its own workspace; `workspace 1a, workspace 1b`
   switches both outputs from a single bind (focus ends on the last).
 - `focus output <name>` moves focus between outputs; chains well with
@@ -184,9 +186,11 @@ authoritative reference is `man 5 sway`.
 - `jq` is the JSON parser used by the scripts — it is a required
   dependency on any machine using this config.
 - The "query then act" pattern is one `get_*` query + one chained
-  `swaymsg` command. The desk script (`scripts/desk`) reads everything it
-  needs (sorted outputs AND the focused output) from a single
-  `get_outputs` call — 1 IPC + 1 chained command per keypress.
+  `swaymsg` command. `desk` (`scripts/desk`) does two queries
+  (`get_outputs` for sorted outputs + focused output, `get_workspaces`
+  for where each <desk><letter> lives and whether it is visible) and one
+  chained `swaymsg` command that only touches what is wrong — an already-
+  shown desk costs zero commands (it exits without touching sway).
 
 ## Input, looks & bar
 
