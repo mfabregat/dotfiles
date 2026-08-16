@@ -1,0 +1,67 @@
+#!/bin/sh
+# spotify-start-hidden — start Spotify parked in the tray, flash-free.
+#
+# Mechanism: a temporary runtime for_window rule makes the Spotify window
+# BORN inside the scratchpad — sway applies for_window criteria during
+# view creation, before first presentation. (An event-subscribe snatcher
+# cannot do this: the IPC 'new' event fires at map time, so the window
+# always flashed a frame or so on screen.) Once the window exists we close
+# it: on the Linux client, closing the window does NOT quit the app, it
+# minimizes it to the tray. Verified live on 1.2.95: after closing, the
+# process stays alive, MPRIS + StatusNotifier keep running, and the icon
+# shows in the quickshell bar tray.
+#
+# Rule cleanup: sway has no unfor_window, so the only way to strip the
+# runtime rule is `swaymsg reload`, done from the EXIT trap. The reload
+# re-runs 'exec' lines only when their process is not already running
+# (sway 1.11 semantics, verified: swayidle stayed 1/1 across reloads), so
+# with Spotify now running this script's own re-run hits the pgrep guard
+# and exits. Known reload side effects: quickshell restarts (exec_always),
+# and `desk start` re-runs (no-op while already on desk 1).
+#
+# Usage:      exec $scripts/spotify-start-hidden   (config.d/autostart)
+# Net effect: Spotify running, tray icon in the bar, no window, no leftover
+#             rules — a later `$mod+s` launches a normal visible instance.
+# Dependencies: swaymsg, jq, pgrep (all already used elsewhere).
+
+set -eu
+
+# Guard: a client already running (e.g. tray-only) — nothing to do. This
+# also makes the cleanup reload's re-run of this script a no-op.
+pgrep -x spotify >/dev/null 2>&1 && exit 0
+
+# Scoped for_window: only this exec's window is affected; the rule is
+# stripped at exit.
+swaymsg -q 'for_window [app_id="spotify"] move scratchpad' || true
+
+# No matter how we exit (window caught, timeout, error): strip the rule.
+trap 'swaymsg -q reload >/dev/null 2>&1 || true' EXIT
+
+# Start the client detached.
+flatpak run com.spotify.Client >/dev/null 2>&1 &
+
+# Locate the window. It is already parked and invisible — the rule did the
+# work, so a slow poll is fine; no race window.
+con=""
+i=0
+while [ -z "$con" ]; do
+    con="$(swaymsg -t get_tree -r | jq -r \
+        '.. | objects | select(.app_id? == "spotify") | .id' | head -n 1)"
+    i=$((i + 1))
+    [ "$i" -ge 240 ] && break         # 120 s cap: window shows normally
+    sleep 0.5
+done
+
+if [ -n "$con" ]; then
+    # Let the window finish booting while parked, then close it — close
+    # == minimize to tray on the Linux client.
+    sleep 2
+    swaymsg -q "[con_id=$con] kill" || true
+    sleep 2
+    # Pathological fallback: if closing quit the client after all, bring
+    # it back as a normal visible window instead of nothing.
+    pgrep -x spotify >/dev/null 2>&1 || {
+        flatpak run com.spotify.Client >/dev/null 2>&1 &
+    }
+fi
+# EXIT trap → reload → rule gone; Spotify keeps running in the tray.

@@ -12,4 +12,7 @@ BOLD="\[$(tput bold)\]"
 PS1="${BOLD}${GREEN} \W > ${RESET}"
 
 # Aliases
-alias code='codium'
+# alias code='codium'
+
+# Pi
+export PATH="$HOME/.local/bin:$PATH"

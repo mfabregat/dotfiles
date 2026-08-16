@@ -32,3 +32,5 @@ set $editor codium
 
 # Scripts bundled with this config (kept in the config dir for portability)
 set $scripts ~/.config/sway/scripts
+
+set $ipc noctalia msg

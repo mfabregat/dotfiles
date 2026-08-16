@@ -1,5 +1,6 @@
 
-exec_always sh -c 'pkill -x quickshell 2>/dev/null; sleep 0.2; exec quickshell'
+# exec_always sh -c 'pkill -x quickshell 2>/dev/null; sleep 0.2; exec quickshell'
+exec noctalia
 exec_always autotiling
 # Night light: the quickshell shell owns the gammastep daemon natively
 # (bar NightLightWidget + popup, services/NightLight.qml — spawns
@@ -10,10 +11,10 @@ exec_always autotiling
 # or an unlock turns DPMS back on. `exec` (not exec_always) so a sway
 # reload doesn't spawn a second swayidle. quickshell ipc needs no env here:
 # swayidle is exec'd by sway, same environment as the $menu/$notifications binds.
-exec swayidle -w \
-	timeout 300 'quickshell ipc call lock lock' \
-	timeout 330 'swaymsg output "*" dpms off' \
-	resume 'swaymsg output "*" dpms on'
+# exec swayidle -w \
+# 	timeout 300 'quickshell ipc call lock lock' \
+# 	timeout 330 'swaymsg output "*" dpms off' \
+# 	resume 'swaymsg output "*" dpms on'
 
 # # Export Sway environment to systemd & D-Bus
 
@@ -22,3 +23,11 @@ exec swayidle -w \
 # Start GNOME Keyring daemon components
 exec dbus-update-activation-environment --all
 exec gnome-keyring-daemon --start --components=secrets,pkcs11,ssh
+
+# Spotify: launch straight into the tray. scripts/spotify-start-hidden starts
+# the client with a pre-armed window snatcher (the window is born into the
+# scratchpad, so it never flashes), waits for it to appear, then closes it —
+# on the Linux client close == minimize to tray, so the app keeps running
+# with its icon in the quickshell bar. `exec` (not exec_always): ignored on
+# reload, so spotify isn't relaunched mid-session.
+exec_always $scripts/spotify-start-hidden

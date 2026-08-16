@@ -1,6 +1,7 @@
 // bar/NightLightWidget.qml — gammastep state (night light).
-// Active: sun during daytime, moon while transitioning, orange moon at
-// night. Disabled: ban (circle-slash). Click opens the control popup.
+// Active: sun during daytime, unlit moon while transitioning, lit
+// (gruvbox orange) moon at night. Disabled: ban (circle-slash). Click
+// opens the control popup.
 import QtQuick
 import qs
 import qs.services
@@ -21,12 +22,14 @@ Rectangle {
 
     Text {
         anchors.centerIn: parent
-        // Disabled: ban. Active: moon (night/transition) or sun (daytime).
+        // Disabled: ban. Active: sun (day) / unlit moon (transition) /
+        // lit orange moon (night).
         text: !NightLight.enabled ? ""
              : root.night || root.transitioning ? ""
              : ""
         color: !NightLight.enabled ? Theme.fgDim
-             : root.night ? Theme.warn
+             : root.night ? Theme.brightOrange
+             : root.transitioning ? Theme.fgDim
              : Theme.fg
         font.family: Theme.fontFamily
         font.pixelSize: Theme.fontSizeGlyphs

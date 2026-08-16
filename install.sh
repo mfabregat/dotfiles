@@ -1,9 +1,10 @@
 sudo dnf install https://mirrors.rpmfusion.org/free/fedora/rpmfusion-free-release-$(rpm -E %fedora).noarch.rpm https://mirrors.rpmfusion.org/nonfree/fedora/rpmfusion-nonfree-release-$(rpm -E %fedora).noarch.rpm
-sudo dnf install akmod-nvidia
+sudo dnf install akmod-nvidia xorg-x11-drv-nvidia-cuda
+# Check build progress: modinfo -F version nvidia
 
 localectl set-locale LANG=es_ES.UTF-8 LC_MESSAGES=en_US.UTF-8
 
-sudo dnf install sway git stow firefox gammastep gnome-keyring python3-pip wget flatpak
+sudo dnf install sway git stow firefox gammastep gnome-keyring gnome-keyring-pam python3-pip wget flatpak
 git config --global user.name "Marc Fabregat"
 git config --global user.email marcfj98@gmail.com
 git clone https://github.com/mfabregat/dotfiles
@@ -59,8 +60,18 @@ sudo nano /etc/pam.d/login
 wget -q -O - https://get.docker.com | sudo bash
 sudo usermod -aG docker $USER
 
+curl -s -L https://nvidia.github.io/libnvidia-container/stable/rpm/nvidia-container-toolkit.repo | sudo tee /etc/yum.repos.d/nvidia-container-toolkit.repo
+sudo dnf install nvidia-container-toolkit
+sudo nvidia-ctk runtime configure --runtime=docker
+sudo systemctl restart docker
+
+
 sudo flatpak remote-add --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo
 flatpak install flathub com.spotify.Client
+flatpak install flathub io.github.Faugus.faugus-launcher
+flatpak install org.freedesktop.Platform.VulkanLayer.MangoHud/x86_64/25.08
+flatpak install flathub com.valvesoftware.Steam
+
 
 lsblk -f
 sudo mkdir -p /mnt/{games,data}

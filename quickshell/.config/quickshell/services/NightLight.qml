@@ -22,6 +22,10 @@
 //   protocol the gammastep-indicator tray app reads:
 //       Notice: Status: Enabled|Disabled
 //       Notice: Period: Daytime|Night|Transition|None
+//       (during a transition the Period line carries the progress:
+//        "Transition (Day: 45.57%)" — day-fraction of the
+//        interpolation, 100% at dusk start → 0% at full night,
+//        rising back to 100% at dawn finish)
 //       Notice: Color temperature: 6500K
 //       Notice: Temperatures: 6500K (Day), 2200K (Night)  (config info)
 //       Notice: Brightness: 1.00:0.70        (day:night, config info)
@@ -44,6 +48,11 @@ Singleton {
     property bool enabled: true
     /// Current period: Daytime | Night | Transition | None (off).
     property string period: "Unknown"
+    /// Transition position as a day-fraction 0-100: how far the screen
+    /// is from NIGHT toward DAY colors (the "Day: xx%" the daemon
+    /// appends to the Period line while transitioning). Meaningful only
+    /// when period === "Transition".
+    property real transitionDay: 0
     /// Current target temperature in Kelvin (reported by the daemon).
     property int temperature: 6500
 
@@ -162,7 +171,17 @@ Singleton {
         if (key === "Status") {
             root.enabled = value === "Enabled";
         } else if (key === "Period") {
-            root.period = value;
+            // "Transition (Day: 45.57%)" — extract the base period and
+            // the transition day-fraction; plain "Night"/"Daytime"
+            // have no suffix.
+            const t = value.match(/^(\w+) \(Day: ([\d.]+)%\)$/);
+            if (t) {
+                root.period = t[1];
+                root.transitionDay = parseFloat(t[2]);
+            } else {
+                root.period = value;
+                root.transitionDay = 0;
+            }
         } else if (key === "Color temperature") {
             root.temperature = parseInt(value, 10) || root.temperature;
         } else if (key === "Temperatures") {
@@ -259,6 +278,7 @@ Singleton {
                 available: root.available,
                 enabled: root.enabled,
                 period: root.period,
+                transitionDay: root.transitionDay,
                 temperature: root.temperature,
                 suspended: root.suspended,
                 suspendRemaining: root.suspendRemaining,

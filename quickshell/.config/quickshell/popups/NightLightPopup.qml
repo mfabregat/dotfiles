@@ -57,7 +57,7 @@ AnchoredPopup {
         Divider {}
 
         // Live status (parsed from the daemon's -v output)
-        InfoRow { label: "Period"; value: root.periodLabel(NightLight.period) }
+        InfoRow { label: "Period"; value: root.periodLabel() }
         InfoRow { label: "Temperature"; value: NightLight.enabled ? NightLight.temperature + "K" : "—" }
         InfoRow { label: "Day / Night"; value: NightLight.configDay + "K / " + NightLight.configNight + "K" }
         InfoRow {
@@ -135,8 +135,17 @@ AnchoredPopup {
         }
     }
 
-    function periodLabel(p: string): string {
-        if (p === "Daytime" || p === "Night" || p === "Transition") return p;
+    // Period display, with the transition moment: while transitioning the
+    // daemon reports the day-fraction ("Day: 45.57%") — how far the
+    // screen is from night toward day colors (100% at dusk start, 0% at
+    // full night, rising again at dawn), same as the old
+    // gammastep-indicator Info dialog.
+    function periodLabel(): string {
+        const p = NightLight.period;
+        if (p === "Transition") {
+            return "Transition (Day: " + Math.round(NightLight.transitionDay) + "%)";
+        }
+        if (p === "Daytime" || p === "Night") return p;
         return "Off"; // "None" while disabled, "Unknown" before first line
     }
 
