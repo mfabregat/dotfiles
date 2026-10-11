@@ -30,4 +30,4 @@ exec gnome-keyring-daemon --start --components=secrets,pkcs11,ssh
 # on the Linux client close == minimize to tray, so the app keeps running
 # with its icon in the quickshell bar. `exec` (not exec_always): ignored on
 # reload, so spotify isn't relaunched mid-session.
-exec_always $scripts/spotify-start-hidden
+# exec_always $scripts/spotify-start-hidden

@@ -14,7 +14,7 @@ bindsym $mod+b exec $browser
 bindsym $mod+shift+b exec $browser --incognito
 bindsym $mod+o exec flatpak run md.obsidian.Obsidian
 bindsym $mod+e exec thunar
-
+bindsym $mod+f exec firefox
 
 bindsym $mod+s exec $spotify
 
@@ -55,7 +55,7 @@ bindsym $mod+v splitv
 bindsym $mod+w layout tabbed
 
 # Make the current focus fullscreen
-bindsym $mod+f fullscreen
+# bindsym $mod+f fullscreen
 
 # Toggle the current focus between tiling and floating mode
 bindsym $mod+Shift+space floating toggle
