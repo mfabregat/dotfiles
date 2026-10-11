@@ -10,3 +10,16 @@ bin/
 
 # pi npm package installs (reproducible via `pi install npm:...`)
 npm/
+
+# pi UI/runtime state — machine-local, changes on every session
+settings.json
+trust.json
+notify-done.log
+
+# extension configs — personal tuning, may hold secrets; defaults live in code
+config.json
+devcontainer-bash.json
+**/searxng-config/settings.yml
+
+# local-only dependency links
+**/node_modules/
