@@ -3,8 +3,8 @@
  *
  * - Vision handoff: text-only models get images described by the Gemini API
  *   (direct REST call, no pi provider registry needed).
- * - Web search via a self-hosted SearXNG instance.
- * - URL fetch via a lightweight HTML-to-text parser.
+ * - Web search: moved to the standalone `searxng` extension.
+ * - URL fetch via a lightweight HTML-to-text parser (shared with searxng).
  *
  * Keys (centralized in ~/.pi/agent/auth.json):
  *   { "google": { "type": "api_key", "key": "AIza..." } }
@@ -17,7 +17,7 @@ import { Type } from "typebox";
 import { readFile } from "node:fs/promises";
 import { loadConfig, type Config } from "./config.js";
 import { getAgentDir } from "./auth.js";
-import { searxngSearch, fetchWebPage, ensureDockerSearxng, scheduleDockerStop, shutdownDockerSearxng } from "./searxng.js";
+import { fetchWebPage } from "../searxng/fetch.js";
 import { withTimeout } from "./gemini.js";
 import { extractGitHub, wipeCloneCache } from "./github.js";
 import { analyzeYouTubeUrl, analyzeLocalVideo, extractPdfText, parseYouTubeUrl, classifyFetchTarget } from "./media.js";
@@ -45,7 +45,6 @@ export default function (pi: ExtensionAPI) {
   pi.on("session_shutdown", () => {
     handoff.dispose();
     wipeCloneCache();
-    shutdownDockerSearxng().catch(() => {});
   });
 
   pi.on("session_start", async (_event, ctx) => {
@@ -57,95 +56,6 @@ export default function (pi: ExtensionAPI) {
   });
 
   // ------------------------------------------------------------------ tools
-
-  pi.registerTool({
-    name: "web_search",
-    label: "Web Search",
-    description:
-      "Search the web using a self-hosted SearXNG instance. Returns ranked results with title, URL, and snippet. Optionally fetch page content for the top results.",
-    promptSnippet: "Search the web for: ",
-    parameters: Type.Object({
-      query: Type.String({ description: "Search query. Use 2-4 varied angles for broad coverage." }),
-      numResults: Type.Optional(Type.Number({ description: "Number of results (1-20, default 5)." })),
-      domainFilter: Type.Optional(
-        Type.Array(Type.String({ description: "Restrict results to these domains. Prefix with - to exclude, e.g. \"-reddit.com\"." })),
-      ),
-      recencyFilter: Type.Optional(
-        Type.Union(
-          [Type.Literal("day"), Type.Literal("week"), Type.Literal("month"), Type.Literal("year")],
-          { description: "Only results from this recency window." },
-        ),
-      ),
-      includeContent: Type.Optional(
-        Type.Boolean({ description: "Also fetch readable markdown content for the top results (default false)." }),
-      ),
-    }),
-    async execute(_toolCallId, params, signal, _onUpdate, ctx) {
-      let baseUrl = config.searxngBaseUrl;
-      let dockerStarted = false;
-      if (!baseUrl && config.searxngDockerEnabled) {
-        const dockerUrl = await ensureDockerSearxng(config.searxngDockerPort ?? 18765, signal);
-        if (dockerUrl) {
-          baseUrl = dockerUrl;
-          dockerStarted = true;
-        }
-      }
-      if (!baseUrl) {
-        return {
-          content: [
-            {
-              type: "text",
-              text: "Web search unavailable: searxngBaseUrl not configured. Add it to ~/.pi/agent/extensions/vision-web/config.json, e.g. { \"searxngBaseUrl\": \"http://localhost:8080\" } — or set { \"searxngDockerEnabled\": true } to spin up a local Docker container on demand.",
-            },
-          ],
-          details: {},
-        };
-      }
-      const recencyMinutes =
-        params.recencyFilter === "day" ? 1440
-        : params.recencyFilter === "week" ? 10080
-        : params.recencyFilter === "month" ? 43200
-        : params.recencyFilter === "year" ? 525600
-        : undefined;
-      const includeDomains: string[] = [];
-      const excludeDomains: string[] = [];
-      for (const raw of params.domainFilter ?? []) {
-        if (raw.trim().startsWith("-")) excludeDomains.push(raw.trim().slice(1));
-        else includeDomains.push(raw.trim());
-      }
-      const { answer, results } = await searxngSearch(params.query, {
-        baseUrl,
-        numResults: params.numResults ?? config.searchDefaultNumResults,
-        includeDomains: includeDomains.length > 0 ? includeDomains : undefined,
-        excludeDomains: excludeDomains.length > 0 ? excludeDomains : undefined,
-        recencyMinutes,
-        signal,
-      });
-
-      if (dockerStarted) {
-        const idleMs = (config.searxngDockerIdleMinutes ?? 5) * 60 * 1000;
-        scheduleDockerStop("pi-searxng", idleMs);
-      }
-
-      const lines = [`Search results for "${params.query}"${dockerStarted ? ` (via local Docker)` : ""}:`, "", answer];
-      let fetched = "";
-      if (params.includeContent && results.length > 0) {
-        const pages = await Promise.all(
-          results.slice(0, MAX_INLINE_FETCH_URLS).map((r) => fetchWebPage(r.url, signal)),
-        );
-        const parts: string[] = [];
-        for (const page of pages) {
-          if (page.error) continue;
-          parts.push(`## ${page.title || page.url}\n${page.content.slice(0, MAX_FETCH_OUTPUT_CHARS)}`);
-        }
-        if (parts.length > 0) fetched = `\n\n--- Page content ---\n${parts.join("\n\n---\n\n")}`;
-      }
-      return {
-        content: [{ type: "text", text: lines.join("\n") + fetched }],
-        details: { results: results.map((r) => ({ title: r.title, url: r.url, snippet: r.snippet })) },
-      };
-    },
-  });
 
   pi.registerTool({
     name: "fetch_url",
@@ -416,7 +326,7 @@ export default function (pi: ExtensionAPI) {
         "vision-web status",
         `enabled: ${config.enabled}`,
         `geminiModel: ${config.geminiModel} (key: ${gemini ? "set" : "MISSING"})`,
-        `searxng: ${config.searxngBaseUrl ?? (config.searxngDockerEnabled ? `docker (port ${config.searxngDockerPort})` : "not configured")}`,
+        `search: moved to the searxng extension (see /searxng status)`,
         `handoff: auto=${config.autoHandoff} models=[${config.handoffModels.join(", ")}]`,
         `video: method=${config.videoMethod} model=${config.geminiModel}`,
         `current model: ${formatModelRef(current)} (${isVisionModel(current) ? "vision-capable" : "text-only"}) — handoff ${isHandoffTarget(current, config) ? "active" : "inactive"}`,

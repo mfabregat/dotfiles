@@ -4,15 +4,18 @@
  * Rules:
  *   1. Inside the folder pi is opened in (and its subfolders): allow everything.
  *   2. Inside the system temp dir (os.tmpdir(), usually /tmp): allow everything.
- *      /dev/null is always safe.
+ *      Device sinks (/dev/null, /dev/zero, /dev/stdout, /dev/stderr, ...) are
+ *      always safe: writing there cannot destroy data.
  *   3. Destructive bash commands that target anything outside those safe areas
  *      ask for confirmation first. "Destructive" covers:
  *      - file deletion/overwrite commands: rm, unlink, rmdir, shred, mv,
  *        truncate, tee, dd (with of=), sed/perl/awk -i, sort -o, find -delete,
  *        git rm, rsync --delete
- *      - overwrite commands (only when the target already exists, or a flag
- *        forces overwrite): cp, install, ln -f, unzip -o, tar -x, curl -o/-O,
- *        wget -O. Fresh writes to new files are allowed.
+ *      - overwrite commands (when the target already exists, a flag forces
+ *        overwrite, or the target is OUTSIDE the safe areas — a fresh write
+ *        to /etc/cron.d is still a system change): cp, install, ln, unzip -o,
+ *        tar -x, curl -o/-O, wget -O. Fresh writes to new files are allowed
+ *        only inside the safe areas.
  *      - git history/state destruction: git reset --hard, git clean,
  *        git checkout --, git push --force/-f, git branch -D
  *      - output redirection operators (>, >>, &>, N>, >|) that write to a file
@@ -39,9 +42,10 @@ const DESTRUCTIVE = new Set([
   "dd", "sed", "perl", "awk", "sort", "find", "git", "rsync",
 ]);
 
-// Overwrite commands: destructive only when the target file/dir already
-// exists (or a flag forces overwrite). Fresh writes are not destructive.
-// Existence is checked with a single stat per target — see decide().
+// Overwrite commands: destructive when the target file/dir already exists,
+// a flag forces overwrite, or the target is outside the safe areas (a fresh
+// external write is a system change too). Fresh writes to new files inside
+// the safe areas are not destructive.
 const OVERWRITE = new Set(["cp", "install", "ln", "unzip", "tar", "curl", "wget"]);
 
 const PREFIXES = new Set(["sudo", "env", "nohup", "time", "command", "nice", "exec", "doas"]);
@@ -49,6 +53,22 @@ const PREFIXES = new Set(["sudo", "env", "nohup", "time", "command", "nice", "ex
 // Redirection operators. `2>&1`-style dups are NOT file writes.
 const DUP_REDIR_RE = /^\d*&>\d+$/; // e.g. 2>&1, >&2
 const REDIR_RE = /^(?:\d+)?&?>+\|?(.*)$/; // e.g. >, >>, &>, 2>, >|, >file, >>file
+
+/** Device paths that can never be destroyed by writing: discards (/dev/null,
+ * /dev/zero, ENOSPC-test /dev/full) and stdio (/dev/stdin, /dev/stdout,
+ * /dev/stderr, /dev/tty, /dev/fd/N). Anything under /proc or /sys is NOT
+ * included on purpose: those can change the live system. Takes an absolute
+ * (ideally normalized) path. */
+const SINK_PATHS = new Set([
+  "/dev/null", "/dev/zero", "/dev/full",
+  "/dev/stdin", "/dev/stdout", "/dev/stderr", "/dev/tty",
+]);
+function isSinkPath(absPath: string): boolean {
+  if (SINK_PATHS.has(absPath)) return true;
+  const norm = path.normalize(absPath);
+  if (norm !== absPath && SINK_PATHS.has(norm)) return true;
+  return /^\/dev\/fd\/\d+$/.test(norm);
+}
 
 /** Quote-aware tokenizer: splits on whitespace outside quotes, strips quotes and escapes. */
 export function tokenize(input: string): string[] {
@@ -192,6 +212,8 @@ export function analyzeSegment(
   segment: string,
   contextDir: string,
   exists: (p: string) => boolean = fs.existsSync,
+  /** True when an absolute path lies outside the safe areas (decide wires this to isSafePath). */
+  isExternal: (p: string) => boolean = () => false,
 ): SegmentAnalysis {
   const rawTokens = tokenize(segment);
 
@@ -220,7 +242,8 @@ export function analyzeSegment(
       consumed.add(i + 1);
       i++;
     }
-    if (file !== "/dev/null") redirFiles.push(file);
+    if (isSinkPath(path.resolve(contextDir, file))) continue;
+    redirFiles.push(file);
   }
   const tokens = rawTokens.filter((_, i) => !consumed.has(i));
   const stripped = stripPrefixes(tokens);
@@ -336,10 +359,10 @@ export function analyzeSegment(
     const lastPos = pos[pos.length - 1];
     switch (command) {
       case "cp": {
-        if (args.includes("-n") || args.includes("--no-clobber")) break; // never overwrites
         if (lastPos) {
           const dest = resolveTarget(lastPos);
-          if (exists(dest)) {
+          const noClobber = args.includes("-n") || args.includes("--no-clobber");
+          if (isExternal(dest) || (!noClobber && exists(dest))) {
             analysis.destructive = true;
             analysis.targets = [dest];
           }
@@ -349,7 +372,7 @@ export function analyzeSegment(
       case "install": {
         if (lastPos) {
           const dest = resolveTarget(lastPos);
-          if (exists(dest)) {
+          if (isExternal(dest) || exists(dest)) {
             analysis.destructive = true;
             analysis.targets = [dest];
           }
@@ -357,9 +380,10 @@ export function analyzeSegment(
         break;
       }
       case "ln": {
-        if ((args.includes("-f") || args.includes("--force")) && lastPos) {
+        if (lastPos) {
           const dest = resolveTarget(lastPos);
-          if (exists(dest)) {
+          const force = args.includes("-f") || args.includes("--force");
+          if (isExternal(dest) || (force && exists(dest))) {
             analysis.destructive = true;
             analysis.targets = [dest];
           }
@@ -370,7 +394,7 @@ export function analyzeSegment(
         if (args.includes("-o")) {
           const dIdx = args.indexOf("-d");
           const destDir = dIdx !== -1 && args[dIdx + 1] ? resolveTarget(args[dIdx + 1]) : analysis.contextDir;
-          if (exists(destDir)) {
+          if (isExternal(destDir) || exists(destDir)) {
             analysis.destructive = true;
             analysis.targets = [destDir];
           }
@@ -386,7 +410,7 @@ export function analyzeSegment(
         if (extracts) {
           const cIdx = args.indexOf("-C");
           const destDir = cIdx !== -1 && args[cIdx + 1] ? resolveTarget(args[cIdx + 1]) : analysis.contextDir;
-          if (exists(destDir)) {
+          if (isExternal(destDir) || exists(destDir)) {
             analysis.destructive = true;
             analysis.targets = [destDir];
           }
@@ -404,7 +428,7 @@ export function analyzeSegment(
         }
         if (out) {
           const dest = resolveTarget(out);
-          if (exists(dest)) {
+          if (isExternal(dest) || exists(dest)) {
             analysis.destructive = true;
             analysis.targets = [dest];
           }
@@ -425,7 +449,7 @@ export function analyzeSegment(
         }
         if (out) {
           const dest = resolveTarget(out);
-          if (exists(dest)) {
+          if (isExternal(dest) || exists(dest)) {
             analysis.destructive = true;
             analysis.targets = [dest];
           }
@@ -470,7 +494,7 @@ function isInside(child: string, parent: string): boolean {
 }
 
 function isSafePath(p: string, rootDir: string, tmpDir: string): boolean {
-  if (p === "/dev/null") return true;
+  if (isSinkPath(p)) return true;
   return isInside(p, rootDir) || isInside(p, tmpDir);
 }
 
@@ -499,7 +523,8 @@ export function decide(command: string, rootDir: string, startDir = rootDir): De
       continue;
     }
 
-    const analysis = analyzeSegment(segment, contextDir);
+    const isExternal = (p: string) => !isSafePath(p, rootDir, tmpDir);
+    const analysis = analyzeSegment(segment, contextDir, fs.existsSync, isExternal);
     if (!analysis.destructive) continue;
 
     const targets = analysis.targets.length ? analysis.targets : [analysis.contextDir];

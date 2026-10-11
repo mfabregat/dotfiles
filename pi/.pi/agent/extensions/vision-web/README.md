@@ -3,11 +3,11 @@
 Combined **vision handoff** (pi-vision-handoff) + **web access** (simplified pi-web-access) for pi.
 
 - **Vision handoff** — text-only models get images described by the Gemini API (direct REST call, no pi provider registry needed). Works for attached images (`pi --image`) and images the agent `read`s.
-- **Web search** — SearXNG (self-hosted meta-search engine). No API key required for your own instance.
-- **URL / media fetch** — one `fetch_url` tool that routes:
+- **URL / media fetch** — one `fetch_url` tool (see table below).
+- **Web search** — moved to the standalone [`searxng`](../searxng/README.md) extension.
   | target | engine |
   |---|---|
-  | web page | lightweight HTML-to-text parser |
+  | web page | lightweight HTML-to-text parser (shared with the `searxng` extension) |
   | GitHub repo/file/tree | clone-first: shallow `git clone` + **local path for read/bash exploration**; API view for repos > `maxRepoSizeMB` (or commit SHAs / private without `gh`); raw/API fallback if clone fails |
   | YouTube URL | Gemini video understanding (no yt-dlp needed) |
   | PDF (URL or local) | Gemini text extraction (no unpdf needed) |
@@ -36,26 +36,23 @@ Combined **vision handoff** (pi-vision-handoff) + **web access** (simplified pi-
 | `cacheMax` | `50` | LRU description cache size (per session) |
 | `maxDescriptionLines` | `0` | cap description length (0 = unbounded) |
 | `batchSize` | `8` | images per Gemini request |
-| `searchDefaultNumResults` | `5` | default `web_search` result count |
+| `searchDefaultNumResults` | — | moved to `searxng` (`defaultNumResults`) |
 | `videoMethod` | `auto` | `auto` (ffmpeg frames if installed, else upload) · `frames` · `upload` |
 | `maxUploadBytes` | 512MB | local video upload cap |
 | `maxPdfBytes` | 15MB | PDF size cap (Gemini inline limit) |
-| `searxngBaseUrl` | — | SearXNG instance URL, e.g. `"http://localhost:8080"` |
-| `searxngDockerEnabled` | `false` | Spin up a local Docker container on demand when `searxngBaseUrl` is not set |
-| `searxngDockerPort` | `18765` | Host port mapped to the container |
-| `searxngDockerIdleMinutes` | `5` | Minutes to keep the container alive after the last search |
+| `searxng*` | — | removed: search moved to the `searxng` extension (own `config.json`) |
 | `githubClone.enabled` | `true` | `false` = skip GitHub handling; URL falls through to normal HTTP extraction |
 | `githubClone.maxRepoSizeMB` | `350` | bigger repos get the lightweight API view instead of a clone |
 | `githubClone.forceClone` | `false` | force a full clone even for oversized repos |
 
 ## Tools
 
-- `web_search` — query, numResults (1-20), domainFilter (`-site` to exclude), recencyFilter (day/week/month/year), includeContent (fetch top pages as text).
 - `fetch_url` — url (web/GitHub/YouTube/PDF/local video) + optional `question`, `timestamp` (`1:23:45`, `23:41-25:00`, or seconds), `frames` (1-12, for local videos with ffmpeg).
+- `web_search` — lives in the `searxng` extension now.
 
 ## Command
 
-- `/vision-web` — status: Gemini key set?, SearXNG configured?, model, handoff target, last error.
+- `/vision-web` — status: Gemini key set?, model, handoff target, last error. (Search backend status: `/searxng`.)
 
 ## Optimizations
 
